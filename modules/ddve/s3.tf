@@ -1,7 +1,8 @@
 # S3 bucket for DDVE storage (optional - only created if create_s3_bucket is true)
 resource "aws_s3_bucket" "ddve" {
-  count  = var.create_s3_bucket ? 1 : 0
-  bucket = var.s3_bucket_name
+  count         = var.create_s3_bucket ? 1 : 0
+  bucket        = var.s3_bucket_name
+  force_destroy = true # Allow Terraform to delete bucket even if it contains objects
 
   tags = merge(
     local.common_tags,

@@ -1,0 +1,63 @@
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+*.tfplan.*
+tfplan*
+
+# Terraform CLI config files
+.terraformrc
+terraform.rc
+
+# AWS credentials
+.aws/
+credentials
+
+# Environment files
+.env
+.env.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.backup
+*.bak
+
+# Key files (NEVER commit private keys)
+*.pem
+*.key
+*.ppk
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
+
+# Documentation and notes
+DOCS/
+.claude/
+claude.md
+
+# Specific key files
+lab.pem
+lab.ppk

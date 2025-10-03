@@ -1,0 +1,15 @@
+# Example terraform.tfvars file
+# Copy this file to terraform.tfvars and fill in your values
+
+# EC2 Key Pair (must already exist in AWS)
+key_pair_name = "my-ec2-keypair"
+
+# DDVE Model (16TB, 32TB, 96TB, or 256TB)
+ddve_model = "16TB"
+
+# S3 Bucket Name (must be globally unique, max 48 chars, no dots)
+# Example: ddve-lab-yourinitials-20241003
+s3_bucket_name = "ddve-lab-myinitials-20241003"
+
+# Optional: Owner tag
+owner_tag = "Your Name"

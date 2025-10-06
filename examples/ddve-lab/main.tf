@@ -33,8 +33,8 @@ module "ave" {
   subnet_id     = module.lab.private_subnet_id
   key_pair_name = var.key_pair_name
 
-  # Security: Use lab internal security group for jump host access
-  additional_security_group_ids = [module.lab.lab_internal_security_group_id]
+  # Security: No additional security groups needed - AVE module creates its own
+  additional_security_group_ids = []
 
   # Allow SSH and management access from entire VPC (jump host can access)
   allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
@@ -61,8 +61,8 @@ module "ddve" {
   s3_bucket_name   = var.s3_bucket_name
   create_s3_bucket = true
 
-  # Security: Use lab internal security group for jump host access
-  additional_security_group_ids = [module.lab.lab_internal_security_group_id]
+  # Security: No additional security groups needed - AVE module creates its own
+  additional_security_group_ids = []
 
   # Allow SSH and management access from entire VPC (jump host can access)
   allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]

@@ -48,9 +48,16 @@ output "jump_host_security_group_id" {
   value       = aws_security_group.jump_host.id
 }
 
-output "lab_internal_security_group_id" {
-  description = "ID of the lab internal security group (for DDVE/AVE)"
-  value       = aws_security_group.lab_internal.id
+# jump_to_backup security group removed - see security-groups.tf for explanation
+
+output "public_subnet_cidr" {
+  description = "CIDR block of the public subnet (for configuring AVE/DDVE ingress)"
+  value       = aws_subnet.public.cidr_block
+}
+
+output "private_subnet_cidr" {
+  description = "CIDR block of the private subnet (for configuring AVE/DDVE communication)"
+  value       = aws_subnet.private.cidr_block
 }
 
 output "nat_gateway_id" {

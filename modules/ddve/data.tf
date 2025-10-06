@@ -9,7 +9,7 @@ data "aws_ami" "ddve" {
 
   filter {
     name   = "image-id"
-    values = [local.ami_ids[data.aws_region.current.name]]
+    values = [local.ami_ids[data.aws_region.current.id]]
   }
 }
 

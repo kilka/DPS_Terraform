@@ -14,14 +14,14 @@ locals {
   rdp_cidr     = var.allowed_rdp_cidr != null ? var.allowed_rdp_cidr : "${local.my_public_ip}/32"
 }
 
-# Get Windows Server 2025 Base AMI
-data "aws_ami" "windows_2025" {
+# Get Windows Server 2022 Base AMI
+data "aws_ami" "windows_2022" {
   most_recent = true
   owners      = ["amazon"]
 
   filter {
     name   = "name"
-    values = ["Windows_Server-2025-English-Full-Base-*"]
+    values = ["Windows_Server-2022-English-Full-Base-*"]
   }
 
   filter {

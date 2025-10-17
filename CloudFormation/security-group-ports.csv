@@ -1,0 +1,149 @@
+Function,Source,Destination,Protocol,Port
+HTTPS for updates and APIs,Ave,0.0.0.0/0,TCP,443
+Product control/service (optional),Ave,0.0.0.0/0,TCP,700
+HTTPS for updates and APIs,Ddve,0.0.0.0/0,TCP,443
+Kerberos to AD (optional),Ave,AdDomainControllerCidr,TCP,88
+Global Catalog to AD,Ddve,AdDomainControllerCidr,TCP,3268
+LDAP TCP to AD,Ddve,AdDomainControllerCidr,TCP,389
+LDAP UDP to AD,Ddve,AdDomainControllerCidr,UDP,389
+Kerberos password change to AD,Ddve,AdDomainControllerCidr,TCP,464
+Kerberos to AD (optional),Ddve,AdDomainControllerCidr,TCP,88
+RPC Portmapper TCP from AVE,Ave,Ave,TCP,111
+RPC Portmapper UDP from AVE,Ave,Ave,UDP,111
+NFS/DD Boost from AVE,Ave,Ave,TCP,2049
+NFS/DD Boost to AVE,Ave,Ave,TCP,2049
+DD Replication from AVE,Ave,Ave,TCP,2051
+DD Replication to AVE,Ave,Ave,TCP,2051
+mountd TCP from AVE,Ave,Ave,TCP,2052
+mountd UDP from AVE,Ave,Ave,UDP,2052
+SSH from AVE,Ave,Ave,TCP,22
+Legacy replication between AVE instances,Ave,Ave,TCP,27000
+Legacy replication between AVE instances,Ave,Ave,TCP,27000
+MCS/CLI/Auth between AVE instances,Ave,Ave,TCP,28001-28002
+MCS replication between AVE instances,Ave,Ave,TCP,28001-28010
+Internal agents between AVE instances,Ave,Ave,TCP,28810-28819
+SSL data path between AVE instances,Ave,Ave,TCP,29000
+SSL data path between AVE instances,Ave,Ave,TCP,29000
+MCS/Avagent SSL between AVE instances,Ave,Ave,TCP,30001-30010
+Avagent SSL between AVE instances,Ave,Ave,TCP,30001-30010
+System management from AVE,Ave,Ave,TCP,3009
+SMS/System management to AVE,Ave,Ave,TCP,3009
+HTTPS from AVE,Ave,Ave,TCP,443
+Echo/Registration from AVE,Ave,Ave,TCP,7
+AUI/Replication between AVE instances,Ave,Ave,TCP,9443
+AUI/Replication between AVE instances,Ave,Ave,TCP,9443
+Legacy client connections,ClientBackupCidr,Ave,TCP,27000
+SSL data path from clients,ClientBackupCidr,Ave,TCP,29000
+MCS/Avagent SSL from clients,ClientBackupCidr,Ave,TCP,30001-30010
+ICMP from DPA,DpaServerCidr,Ave,ICMP,-1
+SNMP TCP from DPA,DpaServerCidr,Ave,TCP,161-163
+SNMP UDP from DPA,DpaServerCidr,Ave,UDP,161-163
+SSH from DPA,DpaServerCidr,Ave,TCP,22
+HTTPS from DPA,DpaServerCidr,Ave,TCP,443
+SNMP TCP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,161-163
+SNMP UDP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,UDP,161-163
+SSH from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,22
+Legacy connections from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,27000
+MCS/CLI/Auth from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,28001-28002
+Internal agents from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,28810-28819
+SSL data path from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,29000
+MCS/Avagent SSL from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,30001-30010
+HTTPS from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,443
+Admin service from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,700
+Update Manager/Installation Manager from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,7543
+Admin services from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,7778-7781
+Admin service from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,8543
+Admin service from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,9090
+AUI/Replication from on-prem DD/Avamar,OnPremDataProtectionCidr,Ave,TCP,9443
+ICMP from on-prem,OnPremMgtCidr,Ave,ICMP,-1
+SSH from on-prem management,OnPremMgtCidr,Ave,TCP,22
+HTTPS from on-prem management,OnPremMgtCidr,Ave,TCP,443
+Admin service from on-prem management,OnPremMgtCidr,Ave,TCP,700
+Update Manager/Installation Manager from on-prem management,OnPremMgtCidr,Ave,TCP,7543
+Admin services from on-prem management,OnPremMgtCidr,Ave,TCP,7778-7781
+Admin service from on-prem management,OnPremMgtCidr,Ave,TCP,8543
+Admin service from on-prem management,OnPremMgtCidr,Ave,TCP,9090
+AUI from on-prem management,OnPremMgtCidr,Ave,TCP,9443
+Global Catalog from AD,AdDomainControllerCidr,Ddve,TCP,3268
+LDAP TCP from AD,AdDomainControllerCidr,Ddve,TCP,389
+LDAP UDP from AD,AdDomainControllerCidr,Ddve,UDP,389
+Kerberos password change from AD,AdDomainControllerCidr,Ddve,TCP,464
+RPC Portmapper TCP to DDVE,Ddve,Ddve,TCP,111
+RPC Portmapper UDP to DDVE,Ddve,Ddve,UDP,111
+NFS/DD Boost between DDVE instances,Ddve,Ddve,TCP,2049
+NFS/DD Boost between DDVE instances,Ddve,Ddve,TCP,2049
+NFS TCP to DDVE,Ddve,Ddve,TCP,2049
+NFS UDP to DDVE,Ddve,Ddve,UDP,2049
+DD Replication between DDVE instances,Ddve,Ddve,TCP,2051
+DD Replication between DDVE instances,Ddve,Ddve,TCP,2051
+mountd TCP to DDVE,Ddve,Ddve,TCP,2052
+mountd UDP to DDVE,Ddve,Ddve,UDP,2052
+SSH between DDVE instances,Ddve,Ddve,TCP,22
+SSH to DDVE (optional),Ddve,Ddve,TCP,22
+Archive tier to DDVE (optional),Ddve,Ddve,TCP,3008-3009
+System management between DDVE instances,Ddve,Ddve,TCP,3009
+SMS/System management between DDVE instances,Ddve,Ddve,TCP,3009
+HTTPS between DDVE instances,Ddve,Ddve,TCP,443
+DD Registration to DDVE,Ddve,Ddve,TCP,7
+ICMP from DPA,DpaServerCidr,Ddve,ICMP,-1
+SNMP TCP from DPA,DpaServerCidr,Ddve,TCP,161-163
+SNMP UDP from DPA,DpaServerCidr,Ddve,UDP,161-163
+SSH from DPA,DpaServerCidr,Ddve,TCP,22
+HTTPS from DPA,DpaServerCidr,Ddve,TCP,443
+RPC Portmapper TCP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,111
+RPC Portmapper UDP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,UDP,111
+NFS TCP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,2049
+NFS UDP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,UDP,2049
+DD Replication from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,2051
+NFS mountd TCP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,2052
+NFS mountd UDP from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,UDP,2052
+SSH from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,22
+Archive tier from on-prem DD/Avamar (optional),OnPremDataProtectionCidr,Ddve,TCP,3008
+Archive tier REST API from on-prem DD/Avamar (optional),OnPremDataProtectionCidr,Ddve,TCP,3009
+HTTPS from on-prem DD/Avamar,OnPremDataProtectionCidr,Ddve,TCP,443
+ICMP from on-prem,OnPremMgtCidr,Ddve,ICMP,-1
+SSH from on-prem management,OnPremMgtCidr,Ddve,TCP,22
+System management from on-prem,OnPremMgtCidr,Ddve,TCP,3009
+HTTPS from on-prem management,OnPremMgtCidr,Ddve,TCP,443
+DNS queries,Ave,DnsServerCidr,UDP,53
+DNS queries,Ddve,DnsServerCidr,UDP,53
+SNMP traps to DPA,Ave,DpaServerCidr,UDP,162
+SNMP traps to DPA,Ddve,DpaServerCidr,UDP,162
+App/Service to management tools (vCenter/BRM),Ave,MgmtToolsCidr,TCP,8443
+App/Service to management tools (vCenter/BRM),Ave,MgmtToolsCidr,TCP,8888
+NTP time sync,Ave,NtpServerCidr,UDP,123
+NTP time sync,Ddve,NtpServerCidr,UDP,123
+RPC Portmapper TCP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,111
+RPC Portmapper UDP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,UDP,111
+SNMP TCP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,161
+SNMP UDP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,UDP,161
+SNMP trap TCP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,163
+SNMP trap UDP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,UDP,163
+NFS TCP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,2049
+NFS UDP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,UDP,2049
+mountd TCP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,2052
+mountd UDP to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,UDP,2052
+SSH to on-prem DD/Avamar (optional),Ave,OnPremDataProtectionCidr,TCP,22
+Legacy connections to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,27000
+MCS replication to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,28001-28010
+SSL data path to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,29000
+Avagent SSL to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,30001-30010
+Archive tier to on-prem DD/Avamar (optional),Ave,OnPremDataProtectionCidr,TCP,3008
+Archive tier REST API to on-prem DD/Avamar (optional),Ave,OnPremDataProtectionCidr,TCP,3009
+DD Registration to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,7
+Admin service to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,9090
+AUI/Replication to on-prem DD/Avamar,Ave,OnPremDataProtectionCidr,TCP,9443
+RPC Portmapper TCP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,111
+RPC Portmapper UDP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,UDP,111
+SNMP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,UDP,161
+NFS TCP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,2049
+NFS UDP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,UDP,2049
+DD Replication to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,2051
+NFS mountd TCP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,2052
+NFS mountd UDP to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,UDP,2052
+Archive tier to on-prem DD/Avamar (optional),Ddve,OnPremDataProtectionCidr,TCP,3008
+Archive tier REST API to on-prem DD/Avamar (optional),Ddve,OnPremDataProtectionCidr,TCP,3009
+SMS/System management to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,3009
+Echo/Registration to on-prem DD/Avamar,Ddve,OnPremDataProtectionCidr,TCP,7
+SMTP for alerts,Ave,SmtpRelayCidr,TCP,25
+SMTP for alerts,Ddve,SmtpRelayCidr,TCP,25

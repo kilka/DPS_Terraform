@@ -47,6 +47,19 @@ resource "aws_security_group_rule" "ssh" {
   description       = "SSH access for CLI configuration"
 }
 
+# SSH access from backup data networks (TCP 22) - Used for AVE to DDVE SSH communication
+# Only creates rules for CIDR blocks not already in allowed_ssh_cidr_blocks to avoid duplicates
+resource "aws_security_group_rule" "ssh_data" {
+  count             = length(setsubtract(var.allowed_data_cidr_blocks, var.allowed_ssh_cidr_blocks)) > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = setsubtract(var.allowed_data_cidr_blocks, var.allowed_ssh_cidr_blocks)
+  security_group_id = aws_security_group.ave.id
+  description       = "SSH access from backup data networks (AVE to DDVE)"
+}
+
 # HTTPS access (TCP 443) - Used for web UI access and configuration
 resource "aws_security_group_rule" "https" {
   count             = length(var.allowed_management_cidr_blocks) > 0 ? 1 : 0
@@ -227,12 +240,24 @@ resource "aws_security_group_rule" "replication" {
   description       = "Replication service"
 }
 
-# GSAN ports (TCP 30001-30003) - GSAN communication
+# DD Boost/Replication (TCP 2051) - DD Boost and replication from DDVE
+resource "aws_security_group_rule" "dd_boost_replication" {
+  count             = length(var.allowed_data_cidr_blocks) > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 2051
+  to_port           = 2051
+  protocol          = "tcp"
+  cidr_blocks       = var.allowed_data_cidr_blocks
+  security_group_id = aws_security_group.ave.id
+  description       = "DD Boost and replication from DDVE"
+}
+
+# GSAN ports (TCP 30001-30010) - GSAN communication
 resource "aws_security_group_rule" "gsan" {
   count             = length(var.allowed_data_cidr_blocks) > 0 ? 1 : 0
   type              = "ingress"
   from_port         = 30001
-  to_port           = 30003
+  to_port           = 30010
   protocol          = "tcp"
   cidr_blocks       = var.allowed_data_cidr_blocks
   security_group_id = aws_security_group.ave.id

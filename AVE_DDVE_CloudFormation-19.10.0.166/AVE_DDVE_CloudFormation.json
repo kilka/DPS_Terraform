@@ -1,0 +1,1060 @@
+{
+    "AWSTemplateFormatVersion" : "2010-09-09",
+  
+    "Description" : "AWS CloudFormation for AVE/DDVE: This template creates AVE and DDVE instances. \n**WARNING** This template creates an Amazon EC2 instance and EBS Volumes. You will be billed for the AWS resources used if you create a stack from this template.",
+    "Mappings": {
+      "AVEInstMap" : {
+        "2TB" : {
+            "InstanceType" : "m5.xlarge"
+        },
+        "4TB" : {
+            "InstanceType" : "m5.2xlarge"
+        },
+		"8TB" : {
+            "InstanceType" : "r5.2xlarge"
+        },
+        "16TB" : {
+            "InstanceType" : "r5.4xlarge"
+        }
+      },
+      "DDVEDiskSizeMap" : {
+        "0.5TB" : {"VolSize":466},
+        "1TB" : {"VolSize":931},
+        "2TB" : {"VolSize":1863},
+        "3TB" : {"VolSize":2794}
+      }
+    },
+    "Parameters" : {
+      "AVEAMIID" : {
+          "Type" : "String",
+          "MinLength": 12,
+          "AllowedPattern" : "^ami-[a-z0-9]*$",
+          "Description": "Specify the AVE AMI image ID"
+      },
+      "DDVEAMIID" : {
+          "Type" : "String",
+          "MinLength": 12,
+          "AllowedPattern" : "^ami-[a-z0-9]*$",
+          "Description": "Specify the DDVE AMI image ID"
+      },
+      "AVEInstanceSize" : {
+        "Description" : "Specify the AVE instance size: 2TB, 4TB, 8TB, 16TB",
+        "Type" : "String",
+        "Default" : "2TB",
+        "AllowedValues" : [ "2TB", "4TB", "8TB", "16TB"]
+      },
+      "DDVEInstanceType" : {
+        "Description" : "m4.xlarge/m5.xlarge: 16TB DDVE; m4.2xlarge/m5.2xlarge: 32TB DDVE; m4.4xlarge/m5.4xlarge: 96TB DDVE. For DDOS version is 7.2 or later, Instance type m5 is recommended to benefit from performance improvements",
+        "Type" : "String",
+        "Default" : "m5.xlarge",
+        "AllowedValues" : [ "m4.xlarge", "m4.2xlarge", "m4.4xlarge", "m5.xlarge", "m5.2xlarge", "m5.4xlarge"],
+        "ConstraintDescription" : "m4.xlarge/m5.xlarge: 16TB DDVE; m4.2xlarge/m5.2xlarge: 32TB DDVE; m4.4xlarge/m5.4xlarge: 96TB DDVE"
+      },
+
+      "AVEDiskType" : {
+          "Type" : "String",
+          "Default" : "gp2",
+          "AllowedValues" : [ "gp2", "st1" ],
+          "Description": "gp2: General Purpose SSD \n st1: Throughput Optimized HDD \n"
+      },
+
+      "DDVEDataDisk1Size" : {
+          "Type": "String",
+          "Default" : "1TB",
+          "AllowedValues" : [ "0.5TB", "1TB", "2TB", "2TB", "3TB"],
+          "Description": "Only one disk is created automatically, the disk can be used for metadata disk of DDVE on object storage or data disk of DDVE on block storage, please add more disks manually if needed. \nPlease be noted: 0.5TB is for evaluation license only. "
+      },
+      "VpcId" : {
+        "Type" : "AWS::EC2::VPC::Id",
+        "Description" : "VpcId of your existing Virtual Private Cloud (VPC)",
+        "ConstraintDescription" : "Must be the VPC Id of an existing Virtual Private Cloud."
+      },
+      "SubnetId" : {
+        "Type" : "AWS::EC2::Subnet::Id",
+        "Default" : "",
+        "Description" : "Both AVE and DDVE will be deployed to the given subnet in your Virtual Private Cloud (VPC)"
+      },
+  
+      "AvailabilityZoneName" : {
+        "Type" : "AWS::EC2::AvailabilityZone::Name",
+        "Default" : "",
+        "Description" : "Both AVE and DDVE will be deployed to the given AvailabilityZone in your Subnet"
+      },
+      "KeyName" : {
+        "Type" : "AWS::EC2::KeyPair::KeyName",
+        "Default" : "",
+        "Description" : "The SSH KeyPair to use for both AVE and DDVE"
+      }
+     },
+  
+    "Metadata" : {
+      "AWS::CloudFormation::Interface" : {
+        "ParameterGroups" : [
+          {
+            "Label" : { "default":"Common Configurations" },
+            "Parameters" : [  "VpcId", "SubnetId", "AvailabilityZoneName", "KeyName" ]
+          },
+          {
+            "Label" : { "default" : "AVE Instance Configurations" },
+            "Parameters" : [ "AVEAMIID", "AVEInstanceSize", "AVEDiskType"]
+          },
+          {
+            "Label" : { "default" : "DDVE Instance Configurations" },
+            "Parameters" : [ "DDVEAMIID", "DDVEInstanceType", "DDVEDataDisk1Size"]
+          }
+        ],
+        "ParameterLabels" : {
+          "AVEAMIID":{"default":"AVE AMI ID"},
+          "DDVEAMIID":{"default":"DDVE AMI ID"},
+          "AVEInstanceSize" : { "default" : "AVE Instance Size" },
+          "AVEDiskType" : {"default" : "AVE EBS volume type for all disks"},
+          "DDVEInstanceType" : { "default" : "DDVE Instance Type" },
+          "DDVEDataDisk1Size" : { "default" : "EBS volume size for the first data disk " },
+          "VpcId" : { "default" : "VPC ID" },
+          "SubnetId" : { "default" : "Subnet ID" },
+          "AvailabilityZoneName" : { "default" : "Availability Zone" },
+          "KeyName" : { "default" : "Key Pair Name"}
+        }
+      }
+    },
+    "Conditions" : {
+      "4TBAVE" : {"Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "4TB"]},
+	  "IsAveDataDisk4Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "4TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk5Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "4TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk6Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "4TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk7Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk8Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk9Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk10Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk11Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      },
+	  "IsAveDataDisk12Valid":{
+        "Fn::Or" : [ 
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "8TB"] },
+            { "Fn::Equals" : [{"Ref" : "AVEInstanceSize"}, "16TB"] }
+        ]
+      }  
+    },
+    "Resources" : {
+      "AVE" : {
+        "Type" : "AWS::EC2::Instance",
+        "Properties" : {
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "ImageId" : {"Ref":"AVEAMIID"},
+          "InstanceType" : {
+            "Fn::FindInMap": [
+              "AVEInstMap", 
+              {
+                  "Ref": "AVEInstanceSize"
+              }, 
+              "InstanceType"
+          ]
+          },
+          "KeyName" : { "Ref" : "KeyName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE"]]}}],
+          "BlockDeviceMappings" : [
+              {
+                  "DeviceName" : "/dev/sda1",
+                  "Ebs" : {
+                      "DeleteOnTermination" : true,
+                      "VolumeType" : "gp2"
+                  }
+              }
+          ],
+            "NetworkInterfaces": [ {
+            "AssociatePublicIpAddress": "false",
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref" : "SubnetId" },
+            "GroupSet": [{ "Ref" : "AVESG" }]
+          } ]
+        }
+      },
+      "MountVOL1" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL1" },
+           "Device" : "/dev/sdb"
+        }
+      },
+      "MountVOL2" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL2" },
+           "Device" : "/dev/sdc"
+        }
+      },
+      "MountVOL3" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL3" },
+           "Device" : "/dev/sdd"
+        }
+      },
+      "MountVOL4" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk4Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL4" },
+           "Device" : "/dev/sde"
+        }
+      },
+      "MountVOL5" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk5Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL5" },
+           "Device" : "/dev/sdf"
+        }
+      },
+      "MountVOL6" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk6Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL6" },
+           "Device" : "/dev/sdg"
+        }
+      },
+	  "MountVOL7" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk7Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL7" },
+           "Device" : "/dev/sdh"
+        }
+      },
+	  "MountVOL8" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk8Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL8" },
+           "Device" : "/dev/sdi"
+        }
+      },
+	  "MountVOL9" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk9Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL9" },
+           "Device" : "/dev/sdj"
+        }
+      },
+	  "MountVOL10" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk10Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL10" },
+           "Device" : "/dev/sdk"
+        }
+      },
+	  "MountVOL11" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk11Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL11" },
+           "Device" : "/dev/sdl"
+        }
+      },
+	  "MountVOL12" : {
+        "Type" : "AWS::EC2::VolumeAttachment",
+        "Condition" : "IsAveDataDisk12Valid",
+        "Properties" : {
+           "InstanceId" : { "Ref" : "AVE" },
+           "VolumeId"  : { "Ref" : "AVVOL12" },
+           "Device" : "/dev/sdm"
+        }
+      },
+      "AVVOL1" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL1"]]}}]
+        }
+      },
+      "AVVOL2" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL2"]]}}]
+        }
+      },
+      "AVVOL3" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL3"]]}}]
+        }
+      },
+      "AVVOL4" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition" : "IsAveDataDisk4Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL4"]]}}]
+        }
+      },
+      "AVVOL5" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk5Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL5"]]}}]
+        }
+      },
+      "AVVOL6" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk6Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL6"]]}}]
+        }
+      },
+	  "AVVOL7" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk7Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL7"]]}}]
+        }
+      },
+	  "AVVOL8" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk8Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL8"]]}}]
+        }
+      },
+	  "AVVOL9" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk9Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL9"]]}}]
+        }
+      },
+	  "AVVOL10" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk10Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL10"]]}}]
+        }
+      },
+	  "AVVOL11" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk11Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL11"]]}}]
+        }
+      },
+	  "AVVOL12" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Condition":"IsAveDataDisk12Valid",
+        "Properties" : {
+          "Size" : 931,
+          "VolumeType" : { "Ref" : "AVEDiskType"},
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_AVE_VOL12"]]}}]
+        }
+      },
+      "DDVE" : {
+        "Type" : "AWS::EC2::Instance",
+        "Properties" : {
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "ImageId" : {"Ref" : "DDVEAMIID"},
+          "InstanceType" : { "Ref" : "DDVEInstanceType" },
+          "KeyName" : { "Ref" : "KeyName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_DDVE_HeadUnit"]]}}],
+          "BlockDeviceMappings" : [
+              {
+                  "DeviceName" : "/dev/sda1",
+                  "Ebs" : {
+                      "DeleteOnTermination" : true,
+                      "VolumeType" : "gp2"
+                  }
+              }
+          ],
+          "Volumes" : [
+            {
+              "VolumeId" : { "Ref" : "NVRAM" },
+              "Device" : "/dev/xvdb"
+            },
+            {
+              "VolumeId" : { "Ref" : "DDVEDataDisk1" },
+              "Device" : "/dev/xvdc"
+            }
+          ],
+          "NetworkInterfaces": [ {
+            "AssociatePublicIpAddress": "false",
+            "DeviceIndex": "0",
+            "SubnetId": { "Ref" : "SubnetId" },
+            "GroupSet": [{ "Ref" : "DDVESG" }]
+          } ]
+        }
+      },
+      "NVRAM" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Properties" : {
+          "Size" : "10",
+          "VolumeType" : "gp2",
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_DDVE_NVRAM"]]}}]
+        }
+      },
+  
+      "DDVEDataDisk1" : {
+        "Type" : "AWS::EC2::Volume",
+        "DeletionPolicy" : "Retain",
+        "Properties" : {
+          "Size" : {"Fn::FindInMap": ["DDVEDiskSizeMap", {"Ref": "DDVEDataDisk1Size"}, "VolSize"]},
+          "VolumeType" : "gp2",
+          "AvailabilityZone" : { "Ref" : "AvailabilityZoneName"},
+          "Tags" : [ {"Key" : "Name", "Value" : { "Fn::Join" : [ "", [ { "Ref" : "AWS::StackName" }, "_DDVE_DataDisk1"]]}}]
+        }
+      },
+      "AVESG": {
+          "Type": "AWS::EC2::SecurityGroup", 
+          "Properties": {
+              "SecurityGroupIngress": [
+                  {
+                    "IpProtocol" : "icmp",
+                    "FromPort" : "11",
+                    "ToPort" : "-1",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "icmp",
+                    "FromPort" : "3",
+                    "ToPort" : "-1",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "icmp",
+                    "FromPort" : "8",
+                    "ToPort" : "-1",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "22",
+                    "ToPort" : "22",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "80",
+                    "ToPort" : "80",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "161",
+                    "ToPort" : "161",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "161",
+                    "ToPort" : "161",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "163",
+                    "ToPort" : "163",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "163",
+                    "ToPort" : "163",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "443",
+                    "ToPort" : "443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "700",
+                    "ToPort" : "700",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "7543",
+                    "ToPort" : "7543",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "7778",
+                    "ToPort" : "7781",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "8543",
+                    "ToPort" : "8543",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "9090",
+                    "ToPort" : "9090",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "9443",
+                    "ToPort" : "9443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "27000",
+                    "ToPort" : "27000",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "28001",
+                    "ToPort" : "28002",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "28810",
+                    "ToPort" : "28819",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "29000",
+                    "ToPort" : "29000",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "30001",
+                    "ToPort" : "30003",
+                    "CidrIp" : "0.0.0.0/0"
+                  }
+              ],
+              "SecurityGroupEgress": [
+                  {
+                    "IpProtocol" : "icmp",
+                    "FromPort" : "8",
+                    "ToPort" : "-1",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "7",
+                    "ToPort" : "7",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "22",
+                    "ToPort" : "22",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "25",
+                    "ToPort" : "25",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "53",
+                    "ToPort" : "53",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "111",
+                    "ToPort" : "111",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "111",
+                    "ToPort" : "111",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "161",
+                    "ToPort" : "161",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "161",
+                    "ToPort" : "161",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "163",
+                    "ToPort" : "163",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "163",
+                    "ToPort" : "163",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "443",
+                    "ToPort" : "443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "700",
+                    "ToPort" : "700",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "2049",
+                    "ToPort" : "2049",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "2049",
+                    "ToPort" : "2049",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "2052",
+                    "ToPort" : "2052",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "2052",
+                    "ToPort" : "2052",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "3008",
+                    "ToPort" : "3008",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "8443",
+                    "ToPort" : "8443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "8888",
+                    "ToPort" : "8888",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "9443",
+                    "ToPort" : "9443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "27000",
+                    "ToPort" : "27000",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "28001",
+                    "ToPort" : "28010",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "29000",
+                    "ToPort" : "29000",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "30001",
+                    "ToPort" : "30010",
+                    "CidrIp" : "0.0.0.0/0"
+                  }
+              ],
+              "VpcId": {
+                  "Ref": "VpcId"
+              }, 
+              "GroupDescription": "Security Group for Avamar server", 
+              "Tags": [
+                  {
+                      "Value": {
+                          "Fn::Join": [
+                              "-", 
+                              [
+                                  {
+                                      "Ref": "AWS::StackName"
+                                  }, 
+                                  "_AVE_SG"
+                              ]
+                          ]
+                      }, 
+                      "Key": "Name"
+                  }
+              ]
+          }
+      },
+      "DDVESG": {
+          "Type": "AWS::EC2::SecurityGroup", 
+          "Properties": {
+              "SecurityGroupIngress": [
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "21",
+                    "ToPort" : "21",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "22",
+                    "ToPort" : "22",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "23",
+                    "ToPort" : "23",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "80",
+                    "ToPort" : "80",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "111",
+                    "ToPort" : "111",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "111",
+                    "ToPort" : "111",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "123",
+                    "ToPort" : "123",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "137",
+                    "ToPort" : "138",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "139",
+                    "ToPort" : "139",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "161",
+                    "ToPort" : "161",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "389",
+                    "ToPort" : "389",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "443",
+                    "ToPort" : "443",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "445",
+                    "ToPort" : "445",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "464",
+                    "ToPort" : "464",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "2049",
+                    "ToPort" : "2049",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "2051",
+                    "ToPort" : "2052",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "3008",
+                    "ToPort" : "3009",
+                    "CidrIp" : "0.0.0.0/0"
+                  },
+                  {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "5001",
+                    "ToPort" : "5001",
+                    "CidrIp" : "0.0.0.0/0"
+                  }
+              ], 
+              "SecurityGroupEgress":[
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "20",
+                    "ToPort" : "20",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "25",
+                    "ToPort" : "25",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "53",
+                    "ToPort" : "53",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "53",
+                    "ToPort" : "53",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "80",
+                    "ToPort" : "80",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "443",
+                    "ToPort" : "443",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "123",
+                    "ToPort" : "123",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "162",
+                    "ToPort" : "162",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "514",
+                    "ToPort" : "514",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "2051",
+                    "ToPort" : "2051",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "3009",
+                    "ToPort" : "3009",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "5001",
+                    "ToPort" : "5001",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "27000",
+                    "ToPort" : "27000",
+                    "CidrIp" : "0.0.0.0/0"
+                },
+                {
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "28001",
+                    "ToPort" : "28001",
+                    "CidrIp" : "0.0.0.0/0"
+                }
+              ],
+              "VpcId": {
+                  "Ref": "VpcId"
+              }, 
+              "GroupDescription": "Security Group for DDVE", 
+              "Tags": [
+                  {
+                      "Value": {
+                          "Fn::Join": [
+                              "-", 
+                              [
+                                  {
+                                      "Ref": "AWS::StackName"
+                                  }, 
+                                  "_DDVE_SG"
+                              ]
+                          ]
+                      }, 
+                      "Key": "Name"
+                  }
+              ]
+          }
+      }
+    },
+  
+    "Outputs" : {
+        "AVIURL" : {
+            "Description" : "AVI installer URL of the newly created AVE instance",
+            "Value" : {
+                    "Fn::Join": [
+                        "", 
+                        [
+                            "https://",
+                            { "Fn::GetAtt" : [ "AVE", "PrivateIp" ] }, 
+                            "/avi"
+                        ]
+                    ]
+            }
+        },
+      "DDSMURL" : {
+        "Description" : "DDSM URL of the newly created DDVE instance",
+        "Value" : {
+                "Fn::Join": [
+                    "", 
+                    [
+                        "http://",
+                        { "Fn::GetAtt" : [ "DDVE", "PrivateIp" ] }
+                    ]
+                ]
+        }
+      }
+    }
+  }
+      

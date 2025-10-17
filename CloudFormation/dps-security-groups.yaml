@@ -1,0 +1,1581 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Security Groups for Data Domain Virtual Edition (DDVE) and Avamar Virtual Edition (AVE)'
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where security groups will be created
+
+  OnPremMgtCidr:
+    Type: String
+    Description: On-premises management network CIDR (Windows management box, etc.)
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  OnPremDataProtectionCidr:
+    Type: String
+    Description: On-premises Data Domain and Avamar CIDR for replication and backup operations
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  AdDomainControllerCidr:
+    Type: String
+    Description: Active Directory/LDAP/Kerberos server CIDR
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  DpaServerCidr:
+    Type: String
+    Description: DPA monitoring server CIDR
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  NtpServerCidr:
+    Type: String
+    Description: NTP server CIDR (use 169.254.169.123/32 for AWS Time Sync)
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+    Default: '169.254.169.123/32'
+
+  DnsServerCidr:
+    Type: String
+    Description: DNS server CIDR (use VPC+2 address or specific DNS servers)
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  SmtpRelayCidr:
+    Type: String
+    Description: SMTP relay server CIDR for alerting
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  ClientBackupCidr:
+    Type: String
+    Description: Client network CIDR for backup operations (optional - can be same as OnPremMgtCidr)
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+  MgmtToolsCidr:
+    Type: String
+    Description: Management tools CIDR (vCenter, BRM, etc.) for AVE integration
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}/\d{1,2}$'
+
+Resources:
+  # ========================================
+  # Data Domain Virtual Edition Security Group
+  # ========================================
+  DdveSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ddve-security-group
+      GroupDescription: Security group for Data Domain Virtual Edition
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: ddve-security-group
+        - Key: Application
+          Value: DataDomain
+
+  # DDVE Inbound Rules
+  DdveIngressDdReplication:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: DD Replication from on-prem DD/Avamar
+
+  DdveIngressDdReplicationFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: DD Replication from AVE
+
+  DdveIngressDdReplicationSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      SourceSecurityGroupId: !Ref DdveSecurityGroup
+      Description: DD Replication between DDVE instances
+
+  DdveIngressRpcTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper TCP from on-prem DD/Avamar
+
+  DdveIngressRpcUdp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper UDP from on-prem DD/Avamar
+
+  DdveIngressNfsTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS TCP from on-prem DD/Avamar
+
+  DdveIngressNfsUdp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS UDP from on-prem DD/Avamar
+
+  DdveIngressMountdTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS mountd TCP from on-prem DD/Avamar
+
+  DdveIngressMountdUdp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS mountd UDP from on-prem DD/Avamar
+
+  DdveIngressArchiveTier:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3008
+      ToPort: 3008
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier from on-prem DD/Avamar (optional)
+
+  DdveIngressArchiveTierRest:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier REST API from on-prem DD/Avamar (optional)
+
+  DdveIngressNfsFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: NFS/DD Boost from AVE
+
+  DdveIngressNfsSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      SourceSecurityGroupId: !Ref DdveSecurityGroup
+      Description: NFS/DD Boost between DDVE instances
+
+  DdveIngressMountdTcpFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2052
+      ToPort: 2052
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: mountd TCP from AVE
+
+  DdveIngressMountdUdpFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2052
+      ToPort: 2052
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: mountd UDP from AVE
+
+  DdveIngressRpcTcpFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: RPC Portmapper TCP from AVE
+
+  DdveIngressRpcUdpFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: RPC Portmapper UDP from AVE
+
+  DdveIngressEchoFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7
+      ToPort: 7
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: Echo/Registration from AVE
+
+  DdveIngressSystemMgmt:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      CidrIp: !Ref OnPremMgtCidr
+      Description: System management from on-prem
+
+  DdveIngressSystemMgmtFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: System management from AVE
+
+  DdveIngressSystemMgmtSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      SourceSecurityGroupId: !Ref DdveSecurityGroup
+      Description: System management between DDVE instances
+
+  DdveIngressLdapTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 389
+      ToPort: 389
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: LDAP TCP from AD
+
+  DdveIngressLdapUdp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 389
+      ToPort: 389
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: LDAP UDP from AD
+
+  DdveIngressGlobalCatalog:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3268
+      ToPort: 3268
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Global Catalog from AD
+
+  DdveIngressKerberos:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 464
+      ToPort: 464
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Kerberos password change from AD
+
+  DdveIngressSshOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref OnPremMgtCidr
+      Description: SSH from on-prem management
+
+  DdveIngressSshOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SSH from on-prem DD/Avamar
+
+  DdveIngressSshFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: SSH from AVE
+
+  DdveIngressSshSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      SourceSecurityGroupId: !Ref DdveSecurityGroup
+      Description: SSH between DDVE instances
+
+  DdveIngressSshDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref DpaServerCidr
+      Description: SSH from DPA
+
+  DdveIngressHttpsOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref OnPremMgtCidr
+      Description: HTTPS from on-prem management
+
+  DdveIngressHttpsOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: HTTPS from on-prem DD/Avamar
+
+  DdveIngressHttpsFromAve:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: HTTPS from AVE
+
+  DdveIngressHttpsSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      SourceSecurityGroupId: !Ref DdveSecurityGroup
+      Description: HTTPS between DDVE instances
+
+  DdveIngressHttpsDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref DpaServerCidr
+      Description: HTTPS from DPA
+
+  DdveIngressSnmpTcpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP TCP from DPA
+
+  DdveIngressSnmpUdpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP UDP from DPA
+
+  DdveIngressIcmpOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref OnPremMgtCidr
+      Description: ICMP from on-prem
+
+  DdveIngressIcmpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref DpaServerCidr
+      Description: ICMP from DPA
+
+  # DDVE Outbound Rules
+  DdveEgressDdReplication:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: DD Replication to on-prem DD/Avamar
+
+  DdveEgressDdReplicationToAve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: DD Replication to AVE
+
+  DdveEgressDdReplicationSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2051
+      ToPort: 2051
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: DD Replication between DDVE instances
+
+  DdveEgressEcho:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7
+      ToPort: 7
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Echo/Registration to on-prem DD/Avamar
+
+  DdveEgressRpcTcp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper TCP to on-prem DD/Avamar
+
+  DdveEgressRpcUdp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper UDP to on-prem DD/Avamar
+
+  DdveEgressSnmpUdp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 161
+      ToPort: 161
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP to on-prem DD/Avamar
+
+  DdveEgressNfsTcp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS TCP to on-prem DD/Avamar
+
+  DdveEgressNfsUdp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS UDP to on-prem DD/Avamar
+
+  DdveEgressMountdTcp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS mountd TCP to on-prem DD/Avamar
+
+  DdveEgressMountdUdp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS mountd UDP to on-prem DD/Avamar
+
+  DdveEgressArchiveTier:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3008
+      ToPort: 3008
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier to on-prem DD/Avamar (optional)
+
+  DdveEgressArchiveTierRest:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier REST API to on-prem DD/Avamar (optional)
+
+  DdveEgressSms:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SMS/System management to on-prem DD/Avamar
+
+  DdveEgressSmsToAve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: SMS/System management to AVE
+
+  DdveEgressSmsSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: SMS/System management between DDVE instances
+
+  DdveEgressLdapTcp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 389
+      ToPort: 389
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: LDAP TCP to AD
+
+  DdveEgressLdapUdp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 389
+      ToPort: 389
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: LDAP UDP to AD
+
+  DdveEgressGlobalCatalog:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3268
+      ToPort: 3268
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Global Catalog to AD
+
+  DdveEgressNfsTcpToAve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: NFS/DD Boost to AVE
+
+  DdveEgressNfsTcpSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: NFS/DD Boost between DDVE instances
+
+  DdveEgressDns:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 53
+      ToPort: 53
+      CidrIp: !Ref DnsServerCidr
+      Description: DNS queries
+
+  DdveEgressNtp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 123
+      ToPort: 123
+      CidrIp: !Ref NtpServerCidr
+      Description: NTP time sync
+
+  DdveEgressSmtp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 25
+      ToPort: 25
+      CidrIp: !Ref SmtpRelayCidr
+      Description: SMTP for alerts
+
+  DdveEgressSnmpTraps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: udp
+      FromPort: 162
+      ToPort: 162
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP traps to DPA
+
+  DdveEgressHttps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+      Description: HTTPS for updates and APIs
+
+  DdveEgressKerberos:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 88
+      ToPort: 88
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Kerberos to AD (optional)
+
+  DdveEgressKerberosPasswordChange:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref DdveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 464
+      ToPort: 464
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Kerberos password change to AD
+
+  # ========================================
+  # Avamar Virtual Edition Security Group
+  # ========================================
+  AveSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ave-security-group
+      GroupDescription: Security group for Avamar Virtual Edition
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: ave-security-group
+        - Key: Application
+          Value: Avamar
+
+  # AVE Inbound Rules
+  AveIngressAdmin700:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 700
+      ToPort: 700
+      CidrIp: !Ref OnPremMgtCidr
+      Description: Admin service from on-prem management
+
+  AveIngressAdmin700DataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 700
+      ToPort: 700
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Admin service from on-prem DD/Avamar
+
+  AveIngressAdmin7543:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7543
+      ToPort: 7543
+      CidrIp: !Ref OnPremMgtCidr
+      Description: Update Manager/Installation Manager from on-prem management
+
+  AveIngressAdmin7543DataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7543
+      ToPort: 7543
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Update Manager/Installation Manager from on-prem DD/Avamar
+
+  AveIngressAdminRange:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7778
+      ToPort: 7781
+      CidrIp: !Ref OnPremMgtCidr
+      Description: Admin services from on-prem management
+
+  AveIngressAdminRangeDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7778
+      ToPort: 7781
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Admin services from on-prem DD/Avamar
+
+  AveIngressAdmin8543:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8543
+      ToPort: 8543
+      CidrIp: !Ref OnPremMgtCidr
+      Description: Admin service from on-prem management
+
+  AveIngressAdmin8543DataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8543
+      ToPort: 8543
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Admin service from on-prem DD/Avamar
+
+  AveIngressAdmin9090:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9090
+      ToPort: 9090
+      CidrIp: !Ref OnPremMgtCidr
+      Description: Admin service from on-prem management
+
+  AveIngressAdmin9090DataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9090
+      ToPort: 9090
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Admin service from on-prem DD/Avamar
+
+  AveIngressAuiOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9443
+      ToPort: 9443
+      CidrIp: !Ref OnPremMgtCidr
+      Description: AUI from on-prem management
+
+  AveIngressAuiDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9443
+      ToPort: 9443
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: AUI/Replication from on-prem DD/Avamar
+
+  AveIngressAuiSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9443
+      ToPort: 9443
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: AUI/Replication between AVE instances
+
+  AveIngressLegacyClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27000
+      ToPort: 27000
+      CidrIp: !Ref ClientBackupCidr
+      Description: Legacy client connections
+
+  AveIngressLegacyDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27000
+      ToPort: 27000
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Legacy connections from on-prem DD/Avamar
+
+  AveIngressLegacySelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27000
+      ToPort: 27000
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: Legacy replication between AVE instances
+
+  AveIngressMcsDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28001
+      ToPort: 28002
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: MCS/CLI/Auth from on-prem DD/Avamar
+
+  AveIngressMcsSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28001
+      ToPort: 28002
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: MCS/CLI/Auth between AVE instances
+
+  AveIngressInternalAgentsDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28810
+      ToPort: 28819
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Internal agents from on-prem DD/Avamar
+
+  AveIngressInternalAgentsSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28810
+      ToPort: 28819
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: Internal agents between AVE instances
+
+  AveIngressSslDataClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 29000
+      ToPort: 29000
+      CidrIp: !Ref ClientBackupCidr
+      Description: SSL data path from clients
+
+  AveIngressSslDataDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 29000
+      ToPort: 29000
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SSL data path from on-prem DD/Avamar
+
+  AveIngressSslDataSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 29000
+      ToPort: 29000
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: SSL data path between AVE instances
+
+  AveIngressAvagentClients:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 30001
+      ToPort: 30010
+      CidrIp: !Ref ClientBackupCidr
+      Description: MCS/Avagent SSL from clients
+
+  AveIngressAvagentDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 30001
+      ToPort: 30010
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: MCS/Avagent SSL from on-prem DD/Avamar
+
+  AveIngressAvagentSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 30001
+      ToPort: 30010
+      SourceSecurityGroupId: !Ref AveSecurityGroup
+      Description: MCS/Avagent SSL between AVE instances
+
+  AveIngressSshOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref OnPremMgtCidr
+      Description: SSH from on-prem management
+
+  AveIngressSshDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SSH from on-prem DD/Avamar
+
+  AveIngressSshDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref DpaServerCidr
+      Description: SSH from DPA
+
+  AveIngressHttpsOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref OnPremMgtCidr
+      Description: HTTPS from on-prem management
+
+  AveIngressHttpsDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: HTTPS from on-prem DD/Avamar
+
+  AveIngressHttpsDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: !Ref DpaServerCidr
+      Description: HTTPS from DPA
+
+  AveIngressSnmpTcpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP TCP from DPA
+
+  AveIngressSnmpTcpDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP TCP from on-prem DD/Avamar
+
+  AveIngressSnmpUdpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP UDP from DPA
+
+  AveIngressSnmpUdpDataProtection:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 161
+      ToPort: 163
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP UDP from on-prem DD/Avamar
+
+  AveIngressIcmpOnPrem:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref OnPremMgtCidr
+      Description: ICMP from on-prem
+
+  AveIngressIcmpDpa:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: icmp
+      FromPort: -1
+      ToPort: -1
+      CidrIp: !Ref DpaServerCidr
+      Description: ICMP from DPA
+
+  # AVE Outbound Rules
+  AveEgressEchoToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7
+      ToPort: 7
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: DD Registration to DDVE
+
+  AveEgressSshToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: SSH to DDVE (optional)
+
+  AveEgressSshToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 22
+      ToPort: 22
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SSH to on-prem DD/Avamar (optional)
+
+  AveEgressRpcTcpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: RPC Portmapper TCP to DDVE
+
+  AveEgressRpcUdpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: RPC Portmapper UDP to DDVE
+
+  AveEgressNfsTcpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: NFS TCP to DDVE
+
+  AveEgressNfsUdpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: NFS UDP to DDVE
+
+  AveEgressMountdTcpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2052
+      ToPort: 2052
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: mountd TCP to DDVE
+
+  AveEgressMountdUdpToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2052
+      ToPort: 2052
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: mountd UDP to DDVE
+
+  AveEgressArchiveToDdve:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3008
+      ToPort: 3009
+      DestinationSecurityGroupId: !Ref DdveSecurityGroup
+      Description: Archive tier to DDVE (optional)
+
+  AveEgressEchoToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 7
+      ToPort: 7
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: DD Registration to on-prem DD/Avamar
+
+  AveEgressRpcTcpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper TCP to on-prem DD/Avamar
+
+  AveEgressRpcUdpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 111
+      ToPort: 111
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: RPC Portmapper UDP to on-prem DD/Avamar
+
+  AveEgressSnmpTcpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 161
+      ToPort: 161
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP TCP to on-prem DD/Avamar
+
+  AveEgressSnmpUdpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 161
+      ToPort: 161
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP UDP to on-prem DD/Avamar
+
+  AveEgressSnmpTrap163TcpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 163
+      ToPort: 163
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP trap TCP to on-prem DD/Avamar
+
+  AveEgressSnmpTrap163UdpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 163
+      ToPort: 163
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SNMP trap UDP to on-prem DD/Avamar
+
+  AveEgressNfsTcpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS TCP to on-prem DD/Avamar
+
+  AveEgressNfsUdpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2049
+      ToPort: 2049
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: NFS UDP to on-prem DD/Avamar
+
+  AveEgressMountdTcpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: mountd TCP to on-prem DD/Avamar
+
+  AveEgressMountdUdpToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 2052
+      ToPort: 2052
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: mountd UDP to on-prem DD/Avamar
+
+  AveEgressArchiveTierToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3008
+      ToPort: 3008
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier to on-prem DD/Avamar (optional)
+
+  AveEgressArchiveTierRestToOnPremDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 3009
+      ToPort: 3009
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Archive tier REST API to on-prem DD/Avamar (optional)
+
+  AveEgressAuiDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9443
+      ToPort: 9443
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: AUI/Replication to on-prem DD/Avamar
+
+  AveEgressAuiSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9443
+      ToPort: 9443
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: AUI/Replication between AVE instances
+
+  AveEgressLegacySelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27000
+      ToPort: 27000
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: Legacy replication between AVE instances
+
+  AveEgressLegacyToDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 27000
+      ToPort: 27000
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Legacy connections to on-prem DD/Avamar
+
+  AveEgressMcsDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28001
+      ToPort: 28010
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: MCS replication to on-prem DD/Avamar
+
+  AveEgressMcsSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 28001
+      ToPort: 28010
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: MCS replication between AVE instances
+
+  AveEgressSslDataSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 29000
+      ToPort: 29000
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: SSL data path between AVE instances
+
+  AveEgressSslDataDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 29000
+      ToPort: 29000
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: SSL data path to on-prem DD/Avamar
+
+  AveEgressAvagentDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 30001
+      ToPort: 30010
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Avagent SSL to on-prem DD/Avamar
+
+  AveEgressAvagentSelf:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 30001
+      ToPort: 30010
+      DestinationSecurityGroupId: !Ref AveSecurityGroup
+      Description: Avagent SSL between AVE instances
+
+  AveEgressDns:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 53
+      ToPort: 53
+      CidrIp: !Ref DnsServerCidr
+      Description: DNS queries
+
+  AveEgressNtp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 123
+      ToPort: 123
+      CidrIp: !Ref NtpServerCidr
+      Description: NTP time sync
+
+  AveEgressSmtp:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 25
+      ToPort: 25
+      CidrIp: !Ref SmtpRelayCidr
+      Description: SMTP for alerts
+
+  AveEgressSnmpTraps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: udp
+      FromPort: 162
+      ToPort: 162
+      CidrIp: !Ref DpaServerCidr
+      Description: SNMP traps to DPA
+
+  AveEgressHttps:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+      CidrIp: 0.0.0.0/0
+      Description: HTTPS for updates and APIs
+
+  AveEgressKerberos:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 88
+      ToPort: 88
+      CidrIp: !Ref AdDomainControllerCidr
+      Description: Kerberos to AD (optional)
+
+  AveEgressPort700:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 700
+      ToPort: 700
+      CidrIp: 0.0.0.0/0
+      Description: Product control/service (optional)
+
+  AveEgressPort8443:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8443
+      ToPort: 8443
+      CidrIp: !Ref MgmtToolsCidr
+      Description: App/Service to management tools (vCenter/BRM)
+
+  AveEgressPort8888:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 8888
+      ToPort: 8888
+      CidrIp: !Ref MgmtToolsCidr
+      Description: App/Service to management tools (vCenter/BRM)
+
+  AveEgressPort9090ToDataProtection:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !Ref AveSecurityGroup
+      IpProtocol: tcp
+      FromPort: 9090
+      ToPort: 9090
+      CidrIp: !Ref OnPremDataProtectionCidr
+      Description: Admin service to on-prem DD/Avamar
+
+Outputs:
+  DdveSecurityGroupId:
+    Description: Security Group ID for Data Domain Virtual Edition
+    Value: !Ref DdveSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-DDVE-SG'
+
+  AveSecurityGroupId:
+    Description: Security Group ID for Avamar Virtual Edition
+    Value: !Ref AveSecurityGroup
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-SG'

@@ -1,0 +1,692 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Avamar Virtual Edition (AVE) deployment based on Dell best practices with GP3 storage and encryption'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: 'AVE Configuration'
+        Parameters:
+          - AveModel
+          - AveVersion
+          - AmiId
+      - Label:
+          default: 'Network Configuration'
+        Parameters:
+          - VpcId
+          - SubnetId
+          - KeyPairName
+      - Label:
+          default: 'Security Groups'
+        Parameters:
+          - AveSecurityGroupId
+          - AdditionalSecurityGroupIds
+      - Label:
+          default: 'Resource Tagging'
+        Parameters:
+          - NameTag
+          - Environment
+          - Owner
+
+Parameters:
+  AveModel:
+    Type: String
+    Description: AVE model selection (determines instance type and disk configuration)
+    Default: '2TB'
+    AllowedValues:
+      - '0.5TB'
+      - '1TB'
+      - '2TB'
+      - '4TB'
+      - '8TB'
+      - '16TB'
+
+  AveVersion:
+    Type: String
+    Description: AVE software version for AMI lookup (e.g., 19.9.0.0)
+    Default: '19.9.0.0'
+
+  AmiId:
+    Type: String
+    Description: 'Optional: Custom AMI ID. Leave blank to use Dell official AMI based on AveVersion'
+    Default: ''
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC where AVE will be deployed
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet where AVE instance will be deployed
+
+  KeyPairName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: EC2 key pair for SSH access to AVE instance
+
+  AveSecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: 'AVE-specific security group ID (select from dropdown)'
+
+  AdditionalSecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: 'Optional: Additional security group IDs (select from dropdown)'
+    Default: ''
+
+  NameTag:
+    Type: String
+    Description: Name tag for the AVE instance and volumes
+    Default: 'ave-backup'
+
+  Environment:
+    Type: String
+    Description: Environment tag
+    Default: 'production'
+    AllowedValues:
+      - 'production'
+      - 'staging'
+      - 'development'
+      - 'test'
+
+  Owner:
+    Type: String
+    Description: Owner/team tag
+    Default: 'backup-team'
+
+Conditions:
+  UseCustomAmi: !Not [!Equals [!Ref AmiId, '']]
+  HasAdditionalSecurityGroups: !Not [!Equals [!Join ['', !Ref AdditionalSecurityGroupIds], '']]
+  Is05TB: !Equals [!Ref AveModel, '0.5TB']
+  Is1TB: !Equals [!Ref AveModel, '1TB']
+  Is2TB: !Equals [!Ref AveModel, '2TB']
+  Is4TB: !Equals [!Ref AveModel, '4TB']
+  Is8TB: !Equals [!Ref AveModel, '8TB']
+  Is16TB: !Equals [!Ref AveModel, '16TB']
+
+  # Volume conditions (up to 12 volumes)
+  CreateVolume1: !Or [!Condition Is05TB, !Condition Is1TB, !Condition Is2TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume2: !Or [!Condition Is05TB, !Condition Is1TB, !Condition Is2TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume3: !Or [!Condition Is05TB, !Condition Is1TB, !Condition Is2TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume4: !Or [!Condition Is1TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume5: !Or [!Condition Is1TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume6: !Or [!Condition Is1TB, !Condition Is4TB, !Condition Is8TB, !Condition Is16TB]
+  CreateVolume7: !Or [!Condition Is8TB, !Condition Is16TB]
+  CreateVolume8: !Or [!Condition Is8TB, !Condition Is16TB]
+  CreateVolume9: !Or [!Condition Is8TB, !Condition Is16TB]
+  CreateVolume10: !Or [!Condition Is8TB, !Condition Is16TB]
+  CreateVolume11: !Or [!Condition Is8TB, !Condition Is16TB]
+  CreateVolume12: !Or [!Condition Is8TB, !Condition Is16TB]
+
+Mappings:
+  # Model configuration mapping
+  ModelConfig:
+    '0.5TB':
+      InstanceType: 'm5.large'
+      RootDiskSize: 250
+      DataDiskSize: 250
+      DataDiskCount: 3
+    '1TB':
+      InstanceType: 'm5.large'
+      RootDiskSize: 250
+      DataDiskSize: 250
+      DataDiskCount: 6
+    '2TB':
+      InstanceType: 'm5.xlarge'
+      RootDiskSize: 250
+      DataDiskSize: 1000
+      DataDiskCount: 3
+    '4TB':
+      InstanceType: 'm5.2xlarge'
+      RootDiskSize: 250
+      DataDiskSize: 1000
+      DataDiskCount: 6
+    '8TB':
+      InstanceType: 'r5.2xlarge'
+      RootDiskSize: 250
+      DataDiskSize: 1000
+      DataDiskCount: 12
+    '16TB':
+      InstanceType: 'r5.4xlarge'
+      RootDiskSize: 250
+      DataDiskSize: 2000
+      DataDiskCount: 12
+
+  # Dell AVE AMI by region and version
+  # Default AMI ID for DELL_Avamar_Virtual_Edition_19.9.0.0
+  # Owner: 679593333241 (Dell)
+  RegionMap:
+    us-east-1:
+      AMI: 'ami-07fbfe86046159cc0'  # DELL_Avamar_Virtual_Edition_19.9.0.0
+    us-east-2:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    us-west-1:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    us-west-2:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    eu-west-1:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    eu-central-1:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    ap-southeast-1:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    ap-southeast-2:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+    ap-northeast-1:
+      AMI: 'ami-0abcdef1234567890'  # Update with actual AMI ID
+
+Resources:
+  # ========================================
+  # AVE EC2 Instance
+  # ========================================
+  AveInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !If
+        - UseCustomAmi
+        - !Ref AmiId
+        - !FindInMap [RegionMap, !Ref 'AWS::Region', AMI]
+      InstanceType: !FindInMap [ModelConfig, !Ref AveModel, InstanceType]
+      SubnetId: !Ref SubnetId
+      KeyName: !Ref KeyPairName
+
+      SecurityGroupIds: !If
+        - HasAdditionalSecurityGroups
+        - !Split
+          - ','
+          - !Sub
+            - '${AveSecurityGroupId},${AdditionalGroups}'
+            - AdditionalGroups: !Join [',', !Ref AdditionalSecurityGroupIds]
+        - [!Ref AveSecurityGroupId]
+
+      # Root block device
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: !FindInMap [ModelConfig, !Ref AveModel, RootDiskSize]
+            Encrypted: true
+            DeleteOnTermination: true
+            Iops: 3000
+
+      # Instance Metadata Service - Allow both IMDSv1 and IMDSv2
+      # Note: AVE requires IMDSv1 on initial boot
+      MetadataOptions:
+        HttpEndpoint: enabled
+        HttpTokens: optional
+        HttpPutResponseHopLimit: 1
+        InstanceMetadataTags: enabled
+
+      # Enable detailed monitoring
+      Monitoring: true
+
+      Tags:
+        - Key: Name
+          Value: !Ref NameTag
+        - Key: Model
+          Value: !Ref AveModel
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+        - Key: Component
+          Value: AVE
+
+  # ========================================
+  # Data Volumes (EBS GP3 Encrypted)
+  # ========================================
+  DataVolume1:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume1
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-1'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '1'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment1:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume1
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume1
+      Device: /dev/sdb
+
+  DataVolume2:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume2
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-2'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '2'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment2:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume2
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume2
+      Device: /dev/sdc
+
+  DataVolume3:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume3
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-3'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '3'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment3:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume3
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume3
+      Device: /dev/sdd
+
+  DataVolume4:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume4
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-4'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '4'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment4:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume4
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume4
+      Device: /dev/sde
+
+  DataVolume5:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume5
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-5'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '5'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment5:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume5
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume5
+      Device: /dev/sdf
+
+  DataVolume6:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume6
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-6'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '6'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment6:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume6
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume6
+      Device: /dev/sdg
+
+  DataVolume7:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume7
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-7'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '7'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment7:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume7
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume7
+      Device: /dev/sdh
+
+  DataVolume8:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume8
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-8'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '8'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment8:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume8
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume8
+      Device: /dev/sdi
+
+  DataVolume9:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume9
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-9'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '9'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment9:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume9
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume9
+      Device: /dev/sdj
+
+  DataVolume10:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume10
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-10'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '10'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment10:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume10
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume10
+      Device: /dev/sdk
+
+  DataVolume11:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume11
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-11'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '11'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment11:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume11
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume11
+      Device: /dev/sdl
+
+  DataVolume12:
+    Type: AWS::EC2::Volume
+    Condition: CreateVolume12
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AvailabilityZone: !GetAtt AveInstance.AvailabilityZone
+      Size: !FindInMap [ModelConfig, !Ref AveModel, DataDiskSize]
+      VolumeType: gp3
+      Encrypted: true
+      Iops: 3000
+      Throughput: 125
+      Tags:
+        - Key: Name
+          Value: !Sub '${NameTag}-data-12'
+        - Key: Type
+          Value: Data
+        - Key: Index
+          Value: '12'
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Owner
+          Value: !Ref Owner
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  VolumeAttachment12:
+    Type: AWS::EC2::VolumeAttachment
+    Condition: CreateVolume12
+    Properties:
+      InstanceId: !Ref AveInstance
+      VolumeId: !Ref DataVolume12
+      Device: /dev/sdm
+
+Outputs:
+  AveInstanceId:
+    Description: AVE EC2 Instance ID
+    Value: !Ref AveInstance
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-Instance-Id'
+
+  AvePrivateIp:
+    Description: AVE Private IP Address
+    Value: !GetAtt AveInstance.PrivateIp
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-Private-IP'
+
+  AveAvailabilityZone:
+    Description: Availability Zone where AVE is deployed
+    Value: !GetAtt AveInstance.AvailabilityZone
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-AZ'
+
+  DataVolumeIds:
+    Description: List of data volume IDs (comma-separated)
+    Value: !Sub
+      - '${Vol1},${Vol2},${Vol3},${Vol4},${Vol5},${Vol6},${Vol7},${Vol8},${Vol9},${Vol10},${Vol11},${Vol12}'
+      - Vol1: !If [CreateVolume1, !Ref DataVolume1, 'N/A']
+        Vol2: !If [CreateVolume2, !Ref DataVolume2, 'N/A']
+        Vol3: !If [CreateVolume3, !Ref DataVolume3, 'N/A']
+        Vol4: !If [CreateVolume4, !Ref DataVolume4, 'N/A']
+        Vol5: !If [CreateVolume5, !Ref DataVolume5, 'N/A']
+        Vol6: !If [CreateVolume6, !Ref DataVolume6, 'N/A']
+        Vol7: !If [CreateVolume7, !Ref DataVolume7, 'N/A']
+        Vol8: !If [CreateVolume8, !Ref DataVolume8, 'N/A']
+        Vol9: !If [CreateVolume9, !Ref DataVolume9, 'N/A']
+        Vol10: !If [CreateVolume10, !Ref DataVolume10, 'N/A']
+        Vol11: !If [CreateVolume11, !Ref DataVolume11, 'N/A']
+        Vol12: !If [CreateVolume12, !Ref DataVolume12, 'N/A']
+
+  AveModel:
+    Description: AVE model deployed
+    Value: !Ref AveModel
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-Model'
+
+  InstanceType:
+    Description: EC2 instance type used
+    Value: !FindInMap [ModelConfig, !Ref AveModel, InstanceType]
+    Export:
+      Name: !Sub '${AWS::StackName}-AVE-Instance-Type'

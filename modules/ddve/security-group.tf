@@ -36,6 +36,19 @@ resource "aws_security_group_rule" "ssh" {
   description       = "SSH access for CLI configuration"
 }
 
+# SSH access from backup data networks (TCP 22) - Used for AVE to DDVE SSH communication
+# Only creates rules for CIDR blocks not already in allowed_ssh_cidr_blocks to avoid duplicates
+resource "aws_security_group_rule" "ssh_data" {
+  count             = length(setsubtract(var.allowed_data_cidr_blocks, var.allowed_ssh_cidr_blocks)) > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = setsubtract(var.allowed_data_cidr_blocks, var.allowed_ssh_cidr_blocks)
+  security_group_id = aws_security_group.ddve.id
+  description       = "SSH access from backup data networks (AVE to DDVE)"
+}
+
 # HTTPS access (TCP 443) - Used for DDSM (GUI) access and configuration
 resource "aws_security_group_rule" "https" {
   count             = length(var.allowed_management_cidr_blocks) > 0 ? 1 : 0
@@ -46,6 +59,30 @@ resource "aws_security_group_rule" "https" {
   cidr_blocks       = var.allowed_management_cidr_blocks
   security_group_id = aws_security_group.ddve.id
   description       = "HTTPS access for DDSM GUI and configuration"
+}
+
+# RPC (TCP 111) - RPC portmapper for NFS
+resource "aws_security_group_rule" "rpc_tcp" {
+  count             = length(var.allowed_data_cidr_blocks) > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 111
+  to_port           = 111
+  protocol          = "tcp"
+  cidr_blocks       = var.allowed_data_cidr_blocks
+  security_group_id = aws_security_group.ddve.id
+  description       = "RPC portmapper for NFS (TCP)"
+}
+
+# RPC (UDP 111) - RPC portmapper for NFS
+resource "aws_security_group_rule" "rpc_udp" {
+  count             = length(var.allowed_data_cidr_blocks) > 0 ? 1 : 0
+  type              = "ingress"
+  from_port         = 111
+  to_port           = 111
+  protocol          = "udp"
+  cidr_blocks       = var.allowed_data_cidr_blocks
+  security_group_id = aws_security_group.ddve.id
+  description       = "RPC portmapper for NFS (UDP)"
 }
 
 # NFS/DD Boost (TCP 2049) - Main port used by NFS and DD Boost

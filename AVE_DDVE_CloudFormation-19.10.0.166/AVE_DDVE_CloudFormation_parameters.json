@@ -1,0 +1,42 @@
+[
+    {
+        "ParameterKey": "AVEAMIID",
+        "ParameterValue": null
+    },
+    {
+        "ParameterKey": "DDVEAMIID",
+        "ParameterValue": null
+    },
+    {
+        "ParameterKey": "AVEInstanceSize",
+        "ParameterValue": "4TB"
+    },
+    {
+        "ParameterKey": "AVEDiskType",
+        "ParameterValue": "gp2"
+    },
+    {
+        "ParameterKey": "DDVEInstanceType",
+        "ParameterValue": "m5.xlarge"
+    },
+    {
+        "ParameterKey": "DDVEDataDisk1Size",
+        "ParameterValue": "1TB"
+    },
+    {
+        "ParameterKey": "VpcId",
+        "ParameterValue": null
+    },
+    {
+        "ParameterKey": "SubnetId",
+        "ParameterValue": null
+    },
+    {
+        "ParameterKey": "AvailabilityZoneName",
+        "ParameterValue": null
+    },
+    {
+        "ParameterKey": "KeyName",
+        "ParameterValue": null
+    }
+]

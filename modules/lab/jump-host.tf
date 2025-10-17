@@ -1,6 +1,6 @@
-# Windows Server 2025 jump host
+# Windows Server 2022 jump host
 resource "aws_instance" "jump_host" {
-  ami           = data.aws_ami.windows_2025.id
+  ami           = data.aws_ami.windows_2022.id
   instance_type = var.jump_host_instance_type
   subnet_id     = aws_subnet.public.id
   key_name      = var.jump_host_key_pair_name
@@ -63,7 +63,7 @@ resource "aws_instance" "jump_host" {
     {
       Name      = "${var.lab_name}-jump-host"
       ManagedBy = "Terraform"
-      OS        = "Windows Server 2025"
+      OS        = "Windows Server 2022"
     }
   )
 }

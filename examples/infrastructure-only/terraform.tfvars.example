@@ -1,0 +1,8 @@
+# Example terraform.tfvars for infrastructure-only deployment
+# Copy this file to terraform.tfvars and update with your values
+
+# Required: EC2 key pair name (must exist in your AWS account)
+key_pair_name = "your-key-pair-name"
+
+# Optional: Owner tag for resource tracking
+owner_tag = "YourName"

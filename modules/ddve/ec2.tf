@@ -5,8 +5,8 @@ resource "aws_instance" "ddve" {
   subnet_id     = var.subnet_id
   key_name      = var.key_pair_name
 
-  # Attach security groups (module-created + additional)
-  vpc_security_group_ids = local.security_group_ids
+  # Attach security groups
+  vpc_security_group_ids = var.security_group_ids
 
   # Attach IAM instance profile for S3 access
   iam_instance_profile = local.create_iam_role ? aws_iam_instance_profile.ddve[0].name : var.iam_role_name
@@ -30,7 +30,7 @@ resource "aws_instance" "ddve" {
   # Enable IMDSv2 (Instance Metadata Service Version 2)
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"  # IMDSv2 required
+    http_tokens                 = "required" # IMDSv2 required
     http_put_response_hop_limit = 1
     instance_metadata_tags      = "enabled"
   }

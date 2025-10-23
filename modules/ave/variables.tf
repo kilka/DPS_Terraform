@@ -29,33 +29,18 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "additional_security_group_ids" {
-  description = "Additional security group IDs to attach to the AVE instance (beyond the AVE-specific security group created by this module)"
+variable "security_group_ids" {
+  description = "List of security group IDs to attach to the AVE instance. Use the security-groups/ave module to create an AVE-specific security group."
   type        = list(string)
-  default     = []
+  validation {
+    condition     = length(var.security_group_ids) > 0
+    error_message = "At least one security group ID must be provided. Use the modules/security-groups/ave module to create an AVE security group."
+  }
 }
 
 variable "key_pair_name" {
   description = "EC2 key pair name for SSH access to the AVE instance"
   type        = string
-}
-
-variable "allowed_ssh_cidr_blocks" {
-  description = "CIDR blocks allowed to SSH to the AVE instance"
-  type        = list(string)
-  default     = []
-}
-
-variable "allowed_management_cidr_blocks" {
-  description = "CIDR blocks allowed to access AVE management interfaces (HTTPS:443, ports 161, 163, 700, 7543, 8543, 9090, 9443, 27000, 29000)"
-  type        = list(string)
-  default     = []
-}
-
-variable "allowed_data_cidr_blocks" {
-  description = "CIDR blocks allowed to access AVE data/backup ports (7778-7781, 28001-28002, 28810-28819, 30001-30003)"
-  type        = list(string)
-  default     = []
 }
 
 variable "tags" {

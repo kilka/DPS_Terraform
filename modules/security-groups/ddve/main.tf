@@ -1,17 +1,18 @@
 # DDVE-specific security group
 # NOTE: This security group contains all DDVE management and data ports per official documentation.
-# Additional security groups can be attached via the additional_security_group_ids variable.
 # Reference: Data Domain Virtual Edition Best Practices Guide - Inbound/Outbound Ports
 
 resource "aws_security_group" "ddve" {
-  name_prefix = "${var.name_tag}-ddve-"
-  description = "Security group for DDVE instance ${var.name_tag}"
+  name_prefix = var.name_prefix
+  description = var.description
   vpc_id      = var.vpc_id
 
   tags = merge(
-    local.common_tags,
+    var.tags,
     {
-      Name = "${var.name_tag}-ddve-sg"
+      Name      = var.name
+      ManagedBy = "Terraform"
+      Component = "DDVE"
     }
   )
 

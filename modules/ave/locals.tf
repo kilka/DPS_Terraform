@@ -71,12 +71,6 @@ locals {
   # Selected model configuration
   selected_config = local.model_config[var.model]
 
-  # Security group IDs to attach (module-created + additional)
-  security_group_ids = concat(
-    [aws_security_group.ave.id],
-    var.additional_security_group_ids
-  )
-
   # Common tags
   common_tags = merge(
     {

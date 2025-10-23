@@ -28,7 +28,6 @@ module "ddve" {
   key_pair_name     = "my-key-pair"
   s3_bucket_name    = "my-ddve-storage-bucket"
   create_s3_bucket  = true
-  route_table_ids   = ["rtb-12345678"]
 
   allowed_ssh_cidr_blocks        = ["10.0.0.0/8"]
   allowed_management_cidr_blocks = ["10.0.0.0/8"]
@@ -54,8 +53,6 @@ module "ddve" {
   key_pair_name     = "my-key-pair"
   s3_bucket_name    = "existing-ddve-bucket"
   create_s3_bucket  = false
-
-  route_table_ids = ["rtb-12345678"]
 }
 ```
 
@@ -73,7 +70,6 @@ module "ddve" {
   key_pair_name         = "my-key-pair"
   s3_bucket_name        = "my-ddve-storage-bucket"
   create_s3_bucket      = true
-  route_table_ids       = ["rtb-12345678"]
 }
 ```
 
@@ -105,10 +101,9 @@ module "ddve" {
 | additional_security_group_ids | Additional security group IDs to attach | `list(string)` | `[]` | no |
 | key_pair_name | EC2 key pair name for SSH access | `string` | n/a | yes |
 | aws_partition | AWS partition for IAM ARNs (aws, aws-us-gov, aws-iso) | `string` | `"aws"` | no |
-| enable_s3_vpc_endpoint | Whether to create S3 VPC Gateway Endpoint | `bool` | `true` | no |
-| route_table_ids | Route table IDs for S3 VPC endpoint | `list(string)` | `[]` | no |
 | allowed_ssh_cidr_blocks | CIDR blocks allowed to SSH to DDVE | `list(string)` | `[]` | no |
 | allowed_management_cidr_blocks | CIDR blocks allowed to access DDVE management | `list(string)` | `[]` | no |
+| allowed_data_cidr_blocks | CIDR blocks allowed to access DDVE data ports | `list(string)` | `[]` | no |
 | tags | Additional tags to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs

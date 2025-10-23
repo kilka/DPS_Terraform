@@ -28,11 +28,6 @@ output "s3_bucket_arn" {
   value       = var.create_s3_bucket ? aws_s3_bucket.ddve[0].arn : null
 }
 
-output "security_group_id" {
-  description = "ID of the DDVE-specific security group"
-  value       = aws_security_group.ddve.id
-}
-
 output "iam_role_name" {
   description = "Name of the IAM role attached to the DDVE instance"
   value       = local.create_iam_role ? aws_iam_role.ddve[0].name : var.iam_role_name

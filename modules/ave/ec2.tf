@@ -5,8 +5,8 @@ resource "aws_instance" "ave" {
   subnet_id     = var.subnet_id
   key_name      = var.key_pair_name
 
-  # Attach security groups (module-created + additional)
-  vpc_security_group_ids = local.security_group_ids
+  # Attach security groups
+  vpc_security_group_ids = var.security_group_ids
 
   # Root block device configuration
   root_block_device {

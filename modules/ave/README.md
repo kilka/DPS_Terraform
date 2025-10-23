@@ -31,7 +31,7 @@ module "ave" {
   # Security configuration
   allowed_ssh_cidr_blocks        = ["10.0.0.0/8"]
   allowed_management_cidr_blocks = ["10.0.0.0/8"]
-  allowed_backup_cidr_blocks     = ["10.0.0.0/8", "172.16.0.0/12"]
+  allowed_data_cidr_blocks       = ["10.0.0.0/8", "172.16.0.0/12"]
 
   # Additional security groups from cloud team (optional)
   additional_security_group_ids = ["sg-87654321"]
@@ -85,7 +85,7 @@ The module creates a security group with the following ports based on Dell's off
 | key_pair_name | EC2 key pair name | string | - | yes |
 | allowed_ssh_cidr_blocks | CIDR blocks for SSH access | list(string) | [] | no |
 | allowed_management_cidr_blocks | CIDR blocks for management access | list(string) | [] | no |
-| allowed_backup_cidr_blocks | CIDR blocks for backup operations | list(string) | [] | no |
+| allowed_data_cidr_blocks | CIDR blocks for backup/data operations | list(string) | [] | no |
 | additional_security_group_ids | Additional security groups to attach | list(string) | [] | no |
 | tags | Additional resource tags | map(string) | {} | no |
 

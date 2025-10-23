@@ -1,17 +1,18 @@
 # AVE-specific security group
 # NOTE: This security group contains all AVE management, backup, and data ports per official documentation.
-# Additional security groups can be attached via the additional_security_group_ids variable.
 # Reference: Dell Avamar Virtual Edition Installation and Upgrade Guide - Security Group Settings
 
 resource "aws_security_group" "ave" {
-  name_prefix = "${var.name_tag}-ave-"
-  description = "Security group for AVE instance ${var.name_tag}"
+  name_prefix = var.name_prefix
+  description = var.description
   vpc_id      = var.vpc_id
 
   tags = merge(
-    local.common_tags,
+    var.tags,
     {
-      Name = "${var.name_tag}-ave-sg"
+      Name      = var.name
+      ManagedBy = "Terraform"
+      Component = "AVE"
     }
   )
 

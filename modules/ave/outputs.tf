@@ -18,11 +18,6 @@ output "availability_zone" {
   value       = aws_instance.ave.availability_zone
 }
 
-output "security_group_id" {
-  description = "ID of the AVE-specific security group"
-  value       = aws_security_group.ave.id
-}
-
 output "data_volume_ids" {
   description = "IDs of the data EBS volumes"
   value       = aws_ebs_volume.data[*].id

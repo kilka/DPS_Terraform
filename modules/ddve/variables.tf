@@ -50,10 +50,13 @@ variable "subnet_id" {
   type        = string
 }
 
-variable "additional_security_group_ids" {
-  description = "Additional security group IDs to attach to the DDVE instance (beyond the DDVE-specific security group created by this module)"
+variable "security_group_ids" {
+  description = "List of security group IDs to attach to the DDVE instance. Use the security-groups/ddve module to create a DDVE-specific security group."
   type        = list(string)
-  default     = []
+  validation {
+    condition     = length(var.security_group_ids) > 0
+    error_message = "At least one security group ID must be provided. Use the modules/security-groups/ddve module to create a DDVE security group."
+  }
 }
 
 variable "key_pair_name" {
@@ -69,24 +72,6 @@ variable "aws_partition" {
     condition     = contains(["aws", "aws-us-gov", "aws-iso"], var.aws_partition)
     error_message = "AWS partition must be one of: aws, aws-us-gov, aws-iso"
   }
-}
-
-variable "allowed_ssh_cidr_blocks" {
-  description = "CIDR blocks allowed to SSH to the DDVE instance"
-  type        = list(string)
-  default     = []
-}
-
-variable "allowed_management_cidr_blocks" {
-  description = "CIDR blocks allowed to access DDVE management interfaces (HTTPS:443, SMS:3009)"
-  type        = list(string)
-  default     = []
-}
-
-variable "allowed_data_cidr_blocks" {
-  description = "CIDR blocks allowed to access DDVE data ports (NFS:2049, Replication:2051)"
-  type        = list(string)
-  default     = []
 }
 
 variable "tags" {

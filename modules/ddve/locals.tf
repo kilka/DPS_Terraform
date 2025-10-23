@@ -2,43 +2,43 @@ locals {
   # Model configurations for m6i instances only (m5 variants excluded per requirements)
   model_config = {
     "16TB" = {
-      instance_type            = "m6i.xlarge"
-      root_disk_type          = "gp3"
-      root_disk_size          = 250
-      nvram_disk_type         = "gp3"
-      nvram_disk_size         = 10
-      metadata_disk_type      = "gp3"
-      per_metadata_disk_size  = 1024
+      instance_type             = "m6i.xlarge"
+      root_disk_type            = "gp3"
+      root_disk_size            = 250
+      nvram_disk_type           = "gp3"
+      nvram_disk_size           = 10
+      metadata_disk_type        = "gp3"
+      per_metadata_disk_size    = 1024
       metadata_disk_default_num = 1
     }
     "32TB" = {
-      instance_type            = "m6i.2xlarge"
-      root_disk_type          = "gp3"
-      root_disk_size          = 250
-      nvram_disk_type         = "gp3"
-      nvram_disk_size         = 10
-      metadata_disk_type      = "gp3"
-      per_metadata_disk_size  = 1024
+      instance_type             = "m6i.2xlarge"
+      root_disk_type            = "gp3"
+      root_disk_size            = 250
+      nvram_disk_type           = "gp3"
+      nvram_disk_size           = 10
+      metadata_disk_type        = "gp3"
+      per_metadata_disk_size    = 1024
       metadata_disk_default_num = 4
     }
     "96TB" = {
-      instance_type            = "m6i.4xlarge"
-      root_disk_type          = "gp3"
-      root_disk_size          = 250
-      nvram_disk_type         = "gp3"
-      nvram_disk_size         = 10
-      metadata_disk_type      = "gp3"
-      per_metadata_disk_size  = 1024
+      instance_type             = "m6i.4xlarge"
+      root_disk_type            = "gp3"
+      root_disk_size            = 250
+      nvram_disk_type           = "gp3"
+      nvram_disk_size           = 10
+      metadata_disk_type        = "gp3"
+      per_metadata_disk_size    = 1024
       metadata_disk_default_num = 10
     }
     "256TB" = {
-      instance_type            = "m6i.8xlarge"
-      root_disk_type          = "gp3"
-      root_disk_size          = 250
-      nvram_disk_type         = "gp3"
-      nvram_disk_size         = 10
-      metadata_disk_type      = "gp3"
-      per_metadata_disk_size  = 2048
+      instance_type             = "m6i.8xlarge"
+      root_disk_type            = "gp3"
+      root_disk_size            = 250
+      nvram_disk_type           = "gp3"
+      nvram_disk_size           = 10
+      metadata_disk_type        = "gp3"
+      per_metadata_disk_size    = 2048
       metadata_disk_default_num = 13
     }
   }
@@ -80,14 +80,8 @@ locals {
     local.selected_config.metadata_disk_default_num
   )
 
-  # Security group IDs to attach (module-created + additional)
-  security_group_ids = concat(
-    [aws_security_group.ddve.id],
-    var.additional_security_group_ids
-  )
-
   # IAM role name (use provided or generated)
-  iam_role_name = coalesce(var.iam_role_name, "${var.name_tag}-ddve-role")
+  iam_role_name   = coalesce(var.iam_role_name, "${var.name_tag}-ddve-role")
   create_iam_role = var.iam_role_name == null
 
   # S3 bucket ARN based on AWS partition
@@ -96,10 +90,10 @@ locals {
   # Common tags
   common_tags = merge(
     {
-      Name       = var.name_tag
-      ManagedBy  = "Terraform"
-      Component  = "DDVE"
-      Model      = var.model
+      Name      = var.name_tag
+      ManagedBy = "Terraform"
+      Component = "DDVE"
+      Model     = var.model
     },
     var.tags
   )

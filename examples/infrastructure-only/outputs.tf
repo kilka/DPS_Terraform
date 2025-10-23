@@ -77,18 +77,31 @@ output "ddve_instance_profile_arn" {
   value       = aws_iam_instance_profile.ddve.arn
 }
 
+# Security Group outputs
+output "ave_security_group_id" {
+  description = "AVE security group ID - Use this in CloudFormation templates or Terraform deployments"
+  value       = module.ave_security_group.security_group_id
+}
+
+output "ddve_security_group_id" {
+  description = "DDVE security group ID - Use this in CloudFormation templates or Terraform deployments"
+  value       = module.ddve_security_group.security_group_id
+}
+
 # Helpful information for CloudFormation deployments
 output "cloudformation_parameters" {
   description = "Use these values when deploying CloudFormation templates"
   value = {
-    VpcId                 = module.lab.vpc_id
-    SubnetId              = module.lab.private_subnet_id
-    PublicSubnetId        = module.lab.public_subnet_id
-    S3EndpointId          = module.lab.s3_vpc_endpoint_id
-    JumpHostPrivateIP     = module.lab.jump_host_private_ip
-    AllowedCIDR           = module.lab.vpc_cidr
-    S3BucketName          = aws_s3_bucket.ddve.id
-    DdveIamRoleName       = aws_iam_role.ddve.name
-    DdveInstanceProfile   = aws_iam_instance_profile.ddve.name
+    VpcId               = module.lab.vpc_id
+    SubnetId            = module.lab.private_subnet_id
+    PublicSubnetId      = module.lab.public_subnet_id
+    S3EndpointId        = module.lab.s3_vpc_endpoint_id
+    JumpHostPrivateIP   = module.lab.jump_host_private_ip
+    AllowedCIDR         = module.lab.vpc_cidr
+    S3BucketName        = aws_s3_bucket.ddve.id
+    DdveIamRoleName     = aws_iam_role.ddve.name
+    DdveInstanceProfile = aws_iam_instance_profile.ddve.name
+    AveSecurityGroupId  = module.ave_security_group.security_group_id
+    DdveSecurityGroupId = module.ddve_security_group.security_group_id
   }
 }

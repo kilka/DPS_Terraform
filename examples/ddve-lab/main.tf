@@ -1,4 +1,4 @@
-# Example: Deploy lab environment with AVE and DDVE instances
+# Example: Deploy lab environment with shared security groups and AVE/DDVE instances
 
 # Lab infrastructure
 module "lab" {
@@ -22,6 +22,48 @@ module "lab" {
   }
 }
 
+# Create shared AVE security group (used by all AVE instances)
+module "ave_security_group" {
+  source = "../../modules/security-groups/ave"
+
+  vpc_id      = module.lab.vpc_id
+  name        = "lab-shared-ave-sg"
+  name_prefix = "lab-ave-"
+
+  # Allow SSH and management access from entire VPC (jump host can access)
+  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
+  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
+  # Allow data/backup traffic from VPC (for DDVE integration)
+  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+
+  tags = {
+    Environment = "Lab"
+    Project     = "AVE-DDVE-Testing"
+    Owner       = var.owner_tag
+  }
+}
+
+# Create shared DDVE security group (used by all DDVE instances)
+module "ddve_security_group" {
+  source = "../../modules/security-groups/ddve"
+
+  vpc_id      = module.lab.vpc_id
+  name        = "lab-shared-ddve-sg"
+  name_prefix = "lab-ddve-"
+
+  # Allow SSH and management access from entire VPC (jump host can access)
+  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
+  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
+  # Allow data traffic from VPC (for AVE integration)
+  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+
+  tags = {
+    Environment = "Lab"
+    Project     = "AVE-DDVE-Testing"
+    Owner       = var.owner_tag
+  }
+}
+
 # AVE instance
 module "ave" {
   source = "../../modules/ave"
@@ -33,14 +75,8 @@ module "ave" {
   subnet_id     = module.lab.private_subnet_id
   key_pair_name = var.key_pair_name
 
-  # Security: No additional security groups needed - AVE module creates its own
-  additional_security_group_ids = []
-
-  # Allow SSH and management access from entire VPC (jump host can access)
-  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
-  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
-  # Allow data/backup traffic from VPC (for DDVE integration)
-  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+  # Use shared security group
+  security_group_ids = [module.ave_security_group.security_group_id]
 
   tags = {
     Environment = "Lab"
@@ -61,14 +97,8 @@ module "ddve" {
   s3_bucket_name   = var.s3_bucket_name
   create_s3_bucket = true
 
-  # Security: No additional security groups needed - AVE module creates its own
-  additional_security_group_ids = []
-
-  # Allow SSH and management access from entire VPC (jump host can access)
-  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
-  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
-  # Allow data traffic from VPC (for AVE integration)
-  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+  # Use shared security group
+  security_group_ids = [module.ddve_security_group.security_group_id]
 
   tags = {
     Environment = "Lab"

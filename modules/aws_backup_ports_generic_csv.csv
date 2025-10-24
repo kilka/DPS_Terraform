@@ -1,0 +1,73 @@
+﻿Source,Destination,Protocol,Port,Description
+On-Prem Backup CIDR,AWS CIDR,TCP,7,Echo/Registration between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,22,SSH between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,111,RPC Portmapper TCP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,UDP,111,RPC Portmapper UDP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,443,HTTPS between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,700,Admin service between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,2049,NFS TCP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,UDP,2049,NFS UDP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,2051,DD Replication between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,2051,DD Replication between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,2052,NFS mountd TCP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,UDP,2052,NFS mountd UDP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,3008,Archive tier between on-prem DD/Avamar (optional)
+On-Prem Backup CIDR,AWS CIDR,TCP,3009,SMS/System management between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,7543,Update Manager/Installation Manager between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,8543,Admin service between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,9090,Admin service between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,9443,AUI/Replication between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,27000,Legacy connections between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,29000,SSL data path between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,161-163,SNMP TCP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,UDP,161-163,SNMP UDP between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,28001-28010,MCS replication between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,28810-28819,Internal agents between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,30001-30010,MCS/Avagent SSL between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,7778-7781,Admin services between on-prem DD/Avamar
+On-Prem Backup CIDR,AWS CIDR,TCP,8443,App/Service to management tools (vCenter/BRM)
+On-Prem Backup CIDR,AWS CIDR,TCP,8888,App/Service to management tools (vCenter/BRM)
+AWS CIDR,On-Prem Backup CIDR,TCP,7,Echo/Registration between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,22,SSH between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,111,RPC Portmapper TCP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,UDP,111,RPC Portmapper UDP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,443,HTTPS between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,700,Admin service between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,2049,NFS TCP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,UDP,2049,NFS UDP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,2051,DD Replication between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,2051,DD Replication between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,2052,NFS mountd TCP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,UDP,2052,NFS mountd UDP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,3008,Archive tier between on-prem DD/Avamar (optional)
+AWS CIDR,On-Prem Backup CIDR,TCP,3009,SMS/System management between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,7543,Update Manager/Installation Manager between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,8543,Admin service between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,9090,Admin service between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,9443,AUI/Replication between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,27000,Legacy connections between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,29000,SSL data path between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,161-163,SNMP TCP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,UDP,161-163,SNMP UDP between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,28001-28010,MCS replication between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,28810-28819,Internal agents between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,30001-30010,MCS/Avagent SSL between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,7778-7781,Admin services between on-prem DD/Avamar
+AWS CIDR,On-Prem Backup CIDR,TCP,8443,App/Service to management tools (vCenter/BRM)
+AWS CIDR,On-Prem Backup CIDR,TCP,8888,App/Service to management tools (vCenter/BRM)
+AWS CIDR,NTP Server,UDP,123,NTP
+AWS CIDR,DNS Server,UDP,53,DNS
+AWS CIDR,SMTP Server,TCP,25,SMTP
+On-prem MGMT Host,AWS CIDR,TCP,22,Management Host ssh
+On-prem MGMT Host,AWS CIDR,TCP,443,Management Host web gui
+On-prem MGMT Host,AWS CIDR,TCP,1234,Management Host AVI
+On-prem MGMT Host,AWS CIDR,TCP,7543,Management Host AVI/SSL
+On-prem MGMT Host,AWS CIDR,TCP,7778-7781,Management Host Avamar Console
+On-prem MGMT Host,AWS CIDR,TCP,8580,Management Host AVI Downloader
+On-prem MGMT Host,AWS CIDR,TCP,9443,Management Host GUI / SSL
+DPA Server / Agent,AWS CIDR,TCP,5555,DPA Data Collection
+DPA Server / Agent,AWS CIDR,UDP,161,DPA SNMP
+DPA Server / Agent,AWS CIDR,TCP,22,DPA SSH
+DPA Server / Agent,AWS CIDR,TCP,8443,DPA Rest API
+AWS CIDR,Dell ESRS,TCP,443,Dell ESRS 
+AWS CIDR,Dell ESRS,TCP,8443,Dell ESRS 

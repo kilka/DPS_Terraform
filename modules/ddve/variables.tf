@@ -30,8 +30,9 @@ variable "iam_role_name" {
 }
 
 variable "s3_bucket_name" {
-  description = "Name of S3 bucket for DDVE storage. If create_s3_bucket is true, this bucket will be created. Otherwise, it should reference an existing bucket."
+  description = "Name of S3 bucket for DDVE storage. If not provided, auto-generates as '{name_tag}-ddve-bucket'. If create_s3_bucket is true, this bucket will be created. Otherwise, it should reference an existing bucket."
   type        = string
+  default     = null
 }
 
 variable "create_s3_bucket" {

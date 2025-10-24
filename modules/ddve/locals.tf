@@ -84,8 +84,11 @@ locals {
   iam_role_name   = coalesce(var.iam_role_name, "${var.name_tag}-ddve-role")
   create_iam_role = var.iam_role_name == null
 
+  # S3 bucket name (use provided or generated)
+  s3_bucket_name = coalesce(var.s3_bucket_name, "${var.name_tag}-ddve-bucket")
+
   # S3 bucket ARN based on AWS partition
-  s3_bucket_arn = "${var.aws_partition}:s3:::${var.s3_bucket_name}"
+  s3_bucket_arn = "${var.aws_partition}:s3:::${local.s3_bucket_name}"
 
   # Common tags
   common_tags = merge(

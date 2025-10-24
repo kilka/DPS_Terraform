@@ -45,8 +45,8 @@ resource "aws_iam_role_policy" "ddve_s3" {
           "s3:DeleteObject"
         ]
         Resource = [
-          "arn:${var.aws_partition}:s3:::${var.s3_bucket_name}",
-          "arn:${var.aws_partition}:s3:::${var.s3_bucket_name}/*"
+          "arn:${var.aws_partition}:s3:::${local.s3_bucket_name}",
+          "arn:${var.aws_partition}:s3:::${local.s3_bucket_name}/*"
         ]
       }
     ]

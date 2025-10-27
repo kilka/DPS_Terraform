@@ -4,7 +4,7 @@
 # Reference: aws_backup_ports_generic_csv.csv
 
 resource "aws_security_group" "backup_internal" {
-  name_prefix = var.name_prefix
+  name        = var.name
   description = var.description
   vpc_id      = var.vpc_id
 

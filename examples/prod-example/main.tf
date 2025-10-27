@@ -25,9 +25,8 @@ data "aws_region" "current" {}
 module "backup_internal_sg" {
   source = "../../modules/security-groups/backup-internal"
 
-  vpc_id      = data.aws_vpc.existing.id
-  name        = "${var.deployment_name}-backup-internal-sg"
-  name_prefix = "${var.deployment_name}-internal-"
+  vpc_id = data.aws_vpc.existing.id
+  name   = "${var.deployment_name}-backup-internal-sg"
 
   tags = var.tags
 }
@@ -36,9 +35,8 @@ module "backup_internal_sg" {
 module "backup_management_sg" {
   source = "../../modules/security-groups/backup-management"
 
-  vpc_id      = data.aws_vpc.existing.id
-  name        = "${var.deployment_name}-backup-management-sg"
-  name_prefix = "${var.deployment_name}-mgmt-"
+  vpc_id = data.aws_vpc.existing.id
+  name   = "${var.deployment_name}-backup-management-sg"
 
   # Production management network CIDRs
   onprem_mgmt_cidr_blocks = var.onprem_mgmt_cidr_blocks
@@ -51,13 +49,12 @@ module "backup_management_sg" {
   tags = var.tags
 }
 
-# Security Group 3: On-premises backup connectivity (if needed)
+# Security Group 3: On-premises backup connectivity (REQUIRED)
 module "backup_onprem_sg" {
   source = "../../modules/security-groups/backup-onprem"
 
-  vpc_id      = data.aws_vpc.existing.id
-  name        = "${var.deployment_name}-backup-onprem-sg"
-  name_prefix = "${var.deployment_name}-onprem-"
+  vpc_id = data.aws_vpc.existing.id
+  name   = "${var.deployment_name}-backup-onprem-sg"
 
   # Production on-premises backup infrastructure CIDRs
   onprem_backup_cidr_blocks = var.onprem_backup_cidr_blocks

@@ -4,14 +4,8 @@ variable "vpc_id" {
 }
 
 variable "name" {
-  description = "Name tag for the security group"
+  description = "Name for the security group"
   type        = string
-}
-
-variable "name_prefix" {
-  description = "Name prefix for the security group"
-  type        = string
-  default     = "backup-onprem-sg-"
 }
 
 variable "description" {

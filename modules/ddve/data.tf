@@ -11,6 +11,13 @@ data "aws_ami" "ddve" {
     name   = "image-id"
     values = [local.ami_ids[data.aws_region.current.id]]
   }
+
+  lifecycle {
+    precondition {
+      condition     = contains(keys(local.ami_ids), data.aws_region.current.id)
+      error_message = "DDVE AMI not available in region ${data.aws_region.current.id}. Supported regions: ${join(", ", keys(local.ami_ids))}"
+    }
+  }
 }
 
 # Get subnet details for availability zone

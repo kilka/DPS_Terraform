@@ -80,9 +80,10 @@ locals {
     local.selected_config.metadata_disk_default_num
   )
 
-  # IAM role name (use provided or generated)
-  iam_role_name   = coalesce(var.iam_role_name, "${var.name_tag}-ddve-role")
-  create_iam_role = var.iam_role_name == null
+  # IAM role and instance profile names (use provided or generated)
+  iam_role_name             = coalesce(var.iam_instance_profile_name, "${var.name_tag}-ddve-role")
+  create_iam_role           = var.iam_instance_profile_name == null
+  iam_instance_profile_name = var.iam_instance_profile_name
 
   # S3 bucket name (use provided or generated)
   s3_bucket_name = coalesce(var.s3_bucket_name, "${var.name_tag}-ddve-bucket")

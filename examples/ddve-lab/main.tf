@@ -15,26 +15,8 @@ module "lab" {
   # Disable NAT Gateway - not needed (DDVE uses S3 VPC endpoint, jump host has direct internet)
   enable_nat_gateway = false
 
-  tags = {
-    Environment = "Lab"
-    Project     = "AVE-DDVE-Testing"
-    Owner       = var.owner_tag
-  }
-}
-
-# Create shared AVE security group (used by all AVE instances)
-module "ave_security_group" {
-  source = "../../modules/security-groups/ave"
-
-  vpc_id      = module.lab.vpc_id
-  name        = "lab-shared-ave-sg"
-  name_prefix = "lab-ave-"
-
-  # Allow SSH and management access from entire VPC (jump host can access)
-  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
-  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
-  # Allow data/backup traffic from VPC (for DDVE integration)
-  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+  # Attach backup-internal SG to jump host for testing (allows jump host to use backup protocols)
+  additional_jump_host_security_group_ids = [module.backup_internal_sg.security_group_id]
 
   tags = {
     Environment = "Lab"
@@ -43,19 +25,54 @@ module "ave_security_group" {
   }
 }
 
-# Create shared DDVE security group (used by all DDVE instances)
-module "ddve_security_group" {
-  source = "../../modules/security-groups/ddve"
+# Security Group 1: Internal communication between backup devices (REQUIRED)
+module "backup_internal_sg" {
+  source = "../../modules/security-groups/backup-internal"
 
   vpc_id      = module.lab.vpc_id
-  name        = "lab-shared-ddve-sg"
-  name_prefix = "lab-ddve-"
+  name        = "lab-backup-internal-sg"
+  name_prefix = "lab-internal-"
 
-  # Allow SSH and management access from entire VPC (jump host can access)
-  allowed_ssh_cidr_blocks        = [module.lab.vpc_cidr]
-  allowed_management_cidr_blocks = [module.lab.vpc_cidr]
-  # Allow data traffic from VPC (for AVE integration)
-  allowed_data_cidr_blocks = [module.lab.vpc_cidr]
+  tags = {
+    Environment = "Lab"
+    Project     = "AVE-DDVE-Testing"
+    Owner       = var.owner_tag
+  }
+}
+
+# Security Group 2: Management and monitoring access (REQUIRED)
+module "backup_management_sg" {
+  source = "../../modules/security-groups/backup-management"
+
+  vpc_id      = module.lab.vpc_id
+  name        = "lab-backup-management-sg"
+  name_prefix = "lab-mgmt-"
+
+  # Use jump host subnet for management access
+  onprem_mgmt_cidr_blocks = [module.lab.public_subnet_cidr] # Jump host subnet
+  dpa_server_cidr_blocks  = ["10.2.0.0/24"]                 # Simulated DPA servers
+  ntp_server_ips          = ["10.3.0.1"]                    # Simulated NTP server
+  dns_server_ips          = ["10.4.0.1"]                    # Simulated DNS server
+  smtp_server_ips         = ["10.5.0.1"]                    # Simulated SMTP server
+  dell_esrs_ips           = ["10.6.0.1"]                    # Simulated Dell ESRS
+
+  tags = {
+    Environment = "Lab"
+    Project     = "AVE-DDVE-Testing"
+    Owner       = var.owner_tag
+  }
+}
+
+# Security Group 3: On-premises backup connectivity (OPTIONAL - for testing)
+module "backup_onprem_sg" {
+  source = "../../modules/security-groups/backup-onprem"
+
+  vpc_id      = module.lab.vpc_id
+  name        = "lab-backup-onprem-sg"
+  name_prefix = "lab-onprem-"
+
+  # Dummy values for lab testing - simulating on-prem backup infrastructure
+  onprem_backup_cidr_blocks = ["10.0.0.0/24"] # Simulated on-prem DD/Avamar
 
   tags = {
     Environment = "Lab"
@@ -75,8 +92,12 @@ module "ave" {
   subnet_id     = module.lab.private_subnet_id
   key_pair_name = var.key_pair_name
 
-  # Use shared security group
-  security_group_ids = [module.ave_security_group.security_group_id]
+  # Attach all three security groups (internal + management + onprem)
+  security_group_ids = [
+    module.backup_internal_sg.security_group_id,
+    module.backup_management_sg.security_group_id,
+    module.backup_onprem_sg.security_group_id
+  ]
 
   tags = {
     Environment = "Lab"
@@ -97,8 +118,15 @@ module "ddve" {
   s3_bucket_name   = var.s3_bucket_name
   create_s3_bucket = true
 
-  # Use shared security group
-  security_group_ids = [module.ddve_security_group.security_group_id]
+  # Lab environment: allow force deletion of S3 bucket for clean teardown
+  s3_force_destroy = true
+
+  # Attach all three security groups (internal + management + onprem)
+  security_group_ids = [
+    module.backup_internal_sg.security_group_id,
+    module.backup_management_sg.security_group_id,
+    module.backup_onprem_sg.security_group_id
+  ]
 
   tags = {
     Environment = "Lab"

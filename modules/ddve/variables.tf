@@ -23,8 +23,8 @@ variable "metadata_disk_count" {
   }
 }
 
-variable "iam_role_name" {
-  description = "Name of existing IAM role to attach to the instance. If not provided, a new role will be created."
+variable "iam_instance_profile_name" {
+  description = "Name of existing IAM instance profile to attach to the instance. If not provided, a new IAM role and instance profile will be created. Note: This must be an instance profile name, not an IAM role name."
   type        = string
   default     = null
 }
@@ -73,6 +73,18 @@ variable "aws_partition" {
     condition     = contains(["aws", "aws-us-gov", "aws-iso"], var.aws_partition)
     error_message = "AWS partition must be one of: aws, aws-us-gov, aws-iso"
   }
+}
+
+variable "s3_force_destroy" {
+  description = "When true, allows Terraform to delete the S3 bucket even if it contains objects. When false (default), Terraform will error if the bucket is not empty. This does NOT affect EBS volume lifecycle (EBS prevent_destroy is hardcoded in the module)."
+  type        = bool
+  default     = false
+}
+
+variable "kms_key_id" {
+  description = "ARN of the KMS key to use for EBS volume encryption. If not specified, uses AWS-managed encryption keys. Applies to root, NVRAM, and metadata volumes."
+  type        = string
+  default     = null
 }
 
 variable "tags" {

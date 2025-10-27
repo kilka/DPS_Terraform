@@ -8,6 +8,7 @@ resource "aws_ebs_volume" "data" {
   size              = local.selected_config.data_disk_size
   type              = local.selected_config.data_disk_type
   encrypted         = true
+  kms_key_id        = var.kms_key_id
 
   tags = merge(
     local.common_tags,

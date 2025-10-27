@@ -43,6 +43,12 @@ variable "key_pair_name" {
   type        = string
 }
 
+variable "kms_key_id" {
+  description = "ARN of the KMS key to use for EBS volume encryption. If not specified, uses AWS-managed encryption keys. Applies to root and data volumes."
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)

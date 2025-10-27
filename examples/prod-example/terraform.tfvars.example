@@ -1,0 +1,73 @@
+# Production Deployment Configuration Example
+# Copy this file to terraform.tfvars and update with your values
+
+# Deployment naming
+deployment_name = "prod-backup"
+
+# AWS Region
+aws_region = "us-east-1"
+
+# Network Configuration (UPDATE THESE VALUES - provided by cloud team)
+vpc_id    = "vpc-xxxxxxxxxxxxxxxxx"
+subnet_id = "subnet-xxxxxxxxxxxxxxxxx"
+
+# EC2 Key Pair
+key_pair_name = "your-keypair-name"
+
+# AVE Configuration
+ave_model   = "2TB"
+ave_version = "19.9.0.0"
+
+# DDVE Configuration
+ddve_model = "256TB"
+
+# Management Network Access (UPDATE THESE VALUES)
+# CIDR blocks for on-premises management networks that need access to AVE/DDVE
+onprem_mgmt_cidr_blocks = [
+  "192.168.1.0/24",  # Example: Corporate management network
+  "10.0.10.0/24"     # Example: VPN network
+]
+
+# DPA Server Access (optional)
+dpa_server_cidr_blocks = [
+  "10.0.20.0/24"  # Example: DPA server network
+]
+
+# NTP Server Access (optional)
+ntp_server_ips = [
+  "10.0.30.10"  # Example: NTP server
+]
+
+# DNS Server Access (optional)
+dns_server_ips = [
+  "10.0.40.10",
+  "10.0.40.11"
+]
+
+# SMTP Server Access (optional)
+smtp_server_ips = [
+  "10.0.50.10"  # Example: Mail relay server
+]
+
+# Dell ESRS Server Access (optional)
+dell_esrs_ips = [
+  "10.0.60.10"  # Example: Dell ESRS gateway
+]
+
+# On-Premises Backup Infrastructure Access (optional)
+# CIDR blocks for existing Data Domain or Avamar systems
+onprem_backup_cidr_blocks = [
+  "10.0.70.0/24"  # Example: On-prem backup network
+]
+
+# KMS Key for EBS Encryption (optional)
+# Uncomment to use customer-managed KMS key instead of AWS-managed encryption
+# kms_key_id = "arn:aws:kms:us-east-1:123456789012:key/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+
+# Resource Tags
+tags = {
+  Environment = "Production"
+  Project     = "Backup Infrastructure"
+  CostCenter  = "IT-OPS-001"
+  Owner       = "Cloud Team"
+}

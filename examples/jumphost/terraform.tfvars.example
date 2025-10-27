@@ -1,0 +1,46 @@
+# Jump Host Configuration Example
+# Copy this file to terraform.tfvars and update with your values
+
+# REQUIRED: Get this from prod-example outputs
+# Run: cd ../prod-example && terraform output -raw vpc_id
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+
+# Deployment naming
+deployment_name = "prod-backup-test"
+
+# REQUIRED: EC2 Key Pair (must exist in your AWS account)
+# This is required to decrypt the Windows Administrator password
+key_pair_name = "your-keypair-name"
+
+# Network Configuration
+# Public subnet for jump host (must not overlap with existing subnets in VPC)
+public_subnet_cidr = "10.0.99.0/24"
+
+# Optional: Private subnet CIDR where AVE/DDVE are deployed
+# If provided, allows Avamar client inbound traffic (ports 28001-28002) from AVE
+# Get from prod-example: terraform output -raw private_subnet_cidr (if available)
+private_subnet_cidr = "10.0.2.0/24"
+
+# Optional: Specific availability zone (if not specified, uses first AZ)
+# availability_zone = "us-east-1a"
+
+# Jump Host Instance Type
+jump_host_instance_type = "t3.medium"
+
+# RDP Access
+# If not specified, automatically uses your current public IP
+# To allow RDP from a specific CIDR:
+# allowed_rdp_cidr = "203.0.113.0/24"
+
+# Optional: Attach backup_internal security group for backup protocol testing
+# Get this from prod-example outputs:
+# Run: cd ../prod-example && terraform output -raw backup_internal_sg_id
+# backup_internal_sg_id = "sg-xxxxxxxxxxxxxxxxx"
+
+# Resource Tags
+tags = {
+  Environment = "Testing"
+  Project     = "Backup Infrastructure"
+  Purpose     = "Jump Host"
+  Owner       = "backup-team@example.com"
+}

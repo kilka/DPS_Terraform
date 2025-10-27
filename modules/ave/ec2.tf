@@ -13,6 +13,7 @@ resource "aws_instance" "ave" {
     volume_type           = local.selected_config.root_disk_type
     volume_size           = local.selected_config.root_disk_size
     encrypted             = true
+    kms_key_id            = var.kms_key_id
     delete_on_termination = true
 
     tags = merge(

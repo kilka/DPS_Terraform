@@ -51,6 +51,12 @@ variable "enable_nat_gateway" {
   default     = false
 }
 
+variable "additional_jump_host_security_group_ids" {
+  description = "Additional security group IDs to attach to the jump host (e.g., backup-internal for testing)"
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Additional tags to apply to all resources"
   type        = map(string)

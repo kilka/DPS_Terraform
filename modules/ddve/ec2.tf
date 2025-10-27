@@ -9,13 +9,14 @@ resource "aws_instance" "ddve" {
   vpc_security_group_ids = var.security_group_ids
 
   # Attach IAM instance profile for S3 access
-  iam_instance_profile = local.create_iam_role ? aws_iam_instance_profile.ddve[0].name : var.iam_role_name
+  iam_instance_profile = local.create_iam_role ? aws_iam_instance_profile.ddve[0].name : var.iam_instance_profile_name
 
   # Root block device configuration
   root_block_device {
     volume_type           = local.selected_config.root_disk_type
     volume_size           = local.selected_config.root_disk_size
     encrypted             = true
+    kms_key_id            = var.kms_key_id
     delete_on_termination = true
 
     tags = merge(

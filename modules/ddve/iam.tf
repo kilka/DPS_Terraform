@@ -68,8 +68,8 @@ resource "aws_iam_instance_profile" "ddve" {
   )
 }
 
-# Data source for existing IAM role (if provided)
-data "aws_iam_role" "existing" {
+# Data source for existing IAM instance profile (if provided)
+data "aws_iam_instance_profile" "existing" {
   count = local.create_iam_role ? 0 : 1
-  name  = var.iam_role_name
+  name  = var.iam_instance_profile_name
 }
